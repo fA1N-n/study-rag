@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { btn, btnGhost, card, err, input, label, muted } from "@/components/ui";
+import { btn, btnGhost, dialog, err, input, kicker, label, muted, roman } from "@/components/ui";
 import { DOC_TYPES, documents as initialDocs, subjects as initialSubjects, type Doc, type DocType, type Subject } from "@/lib/mock";
 
 const STATUS: Record<Doc["status"], [string, string]> = {
-  ready: ["готов", "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"],
-  processing: ["индексация", "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"],
-  failed: ["ошибка", "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"],
+  ready: ["в фонде", "text-mute"],
+  processing: ["индексация…", "text-accent"],
+  failed: ["ошибка", "text-accent font-medium"],
 };
 
 const emptySubject: Subject = { id: "", name: "", shortName: "", semester: 1, teacher: "" };
@@ -36,7 +36,7 @@ export default function LibraryPage() {
   const visible = docs.filter(
     (d) => (!selected || d.subjectId === selected) && (!docType || d.docType === docType) && d.title.toLowerCase().includes(search.toLowerCase()),
   );
-  const subjectName = (id: string) => subjects.find((s) => s.id === id)?.name ?? "—";
+  const subjectOf = (id: string) => subjects.find((s) => s.id === id);
 
   function openSubject(s: Subject) {
     setForm(s);
@@ -77,89 +77,96 @@ export default function LibraryPage() {
   const semesters = [...new Set(subjects.map((s) => s.semester))].sort();
 
   return (
-    <div className="grid gap-4 md:grid-cols-[260px_1fr]">
-      <aside className={`${card} h-fit space-y-3`}>
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Предметы</h2>
-          <button className={`${btnGhost} px-2 py-1 text-xs`} onClick={() => openSubject(emptySubject)}>+ Добавить</button>
+    <div className="grid gap-10 md:grid-cols-[240px_1fr]">
+      <aside className="h-fit">
+        <div className="flex items-baseline justify-between border-b border-ink pb-2">
+          <h2 className={kicker}>Указатель предметов</h2>
+          <button className={btnGhost} onClick={() => openSubject(emptySubject)}>+ предмет</button>
         </div>
-        <button onClick={() => setSelected("")} className={`block w-full rounded-lg px-2 py-1 text-left text-sm ${!selected ? "bg-indigo-50 font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300" : ""}`}>
-          Все документы ({docs.length})
+        <button onClick={() => setSelected("")} className={`mt-3 block w-full text-left text-sm ${!selected ? "text-accent" : "hover:text-accent"}`}>
+          {!selected && "— "}Весь фонд <span className="font-mono text-xs text-mute">({docs.length})</span>
         </button>
         {semesters.map((sem) => (
-          <div key={sem}>
-            <div className={`${muted} mb-1 text-xs uppercase`}>{sem} семестр</div>
+          <div key={sem} className="mt-5">
+            <div className="mb-1 font-serif text-sm italic text-mute">{roman(sem)} семестр</div>
             {subjects.filter((s) => s.semester === sem).map((s) => (
-              <div key={s.id} className={`group flex items-center rounded-lg ${selected === s.id ? "bg-indigo-50 dark:bg-indigo-950" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`}>
-                <button onClick={() => setSelected(s.id)} className="flex-1 px-2 py-1 text-left text-sm">{s.name}</button>
-                <button aria-label={`Изменить ${s.name}`} onClick={() => openSubject(s)} className="px-1 text-xs text-slate-400 hover:text-indigo-600">✎</button>
-                <button aria-label={`Удалить ${s.name}`} onClick={() => deleteSubject(s)} className="px-1 pr-2 text-xs text-slate-400 hover:text-red-600">✕</button>
+              <div key={s.id} className="group flex items-baseline gap-2 py-0.5">
+                <button onClick={() => setSelected(s.id)} className={`flex-1 text-left text-sm ${selected === s.id ? "text-accent" : "hover:text-accent"}`}>
+                  {selected === s.id && "— "}{s.name}
+                </button>
+                <span className="flex gap-2 font-mono text-[10px] uppercase text-mute sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                  <button aria-label={`Изменить ${s.name}`} onClick={() => openSubject(s)} className="hover:text-ink">изм</button>
+                  <button aria-label={`Удалить ${s.name}`} onClick={() => deleteSubject(s)} className="hover:text-accent">удал</button>
+                </span>
               </div>
             ))}
           </div>
         ))}
-        {subjects.length === 0 && <p className={muted}>Предметов пока нет.</p>}
+        {subjects.length === 0 && <p className={`${muted} mt-3`}>Предметов пока нет.</p>}
       </aside>
 
-      <section className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input className={input} placeholder="Поиск по названию" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <select aria-label="Тип документа" className={`${input} sm:w-56`} value={docType} onChange={(e) => setDocType(e.target.value)}>
-            <option value="">Все типы</option>
+      <section>
+        <div className="flex flex-col gap-4 border-b border-ink pb-3 sm:flex-row sm:items-end">
+          <input className={input} placeholder="Поиск по названию" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Поиск по названию" />
+          <select aria-label="Тип документа" className={`${input} sm:w-52`} value={docType} onChange={(e) => setDocType(e.target.value)}>
+            <option value="">все типы</option>
             {DOC_TYPES.map((t) => <option key={t}>{t}</option>)}
           </select>
-          <Link href="/upload" className={btn}>Загрузить</Link>
+          <Link href="/upload" className={`${btn} shrink-0`}>Загрузить</Link>
         </div>
 
         {visible.length === 0 ? (
-          <div className={`${card} text-center`}><p className={muted}>Документов не найдено. Измените фильтры или загрузите документ.</p></div>
+          <p className="py-12 text-center font-serif text-lg italic text-mute">Документов не найдено. Измените фильтры или загрузите документ.</p>
         ) : (
-          <ul className="space-y-2">
-            {visible.map((d) => (
-              <li key={d.id} className={`${card} flex flex-col gap-2 sm:flex-row sm:items-center`}>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/library/${d.id}`} className="font-medium hover:text-indigo-600">{d.title}</Link>
-                  <div className={`${muted} text-xs`}>
-                    {subjectName(d.subjectId)} · {d.docType} · {d.source} · {d.units.length} ед.
+          <ul>
+            {visible.map((d) => {
+              const subj = subjectOf(d.subjectId);
+              return (
+                <li key={d.id} className="grid grid-cols-[3.5rem_1fr] gap-x-4 gap-y-2 border-b border-rule py-4 sm:grid-cols-[3.5rem_1fr_auto]">
+                  <span className="pt-1 font-mono text-[11px] uppercase text-mute">{subj?.shortName}·{subj && roman(subj.semester)}</span>
+                  <div className="min-w-0">
+                    <Link href={`/library/${d.id}`} className="font-serif text-lg leading-snug hover:text-accent hover:underline">{d.title}</Link>
+                    <div className={`${kicker} mt-1`}>
+                      {d.docType} · {d.source} · {d.units.length} ед. · <span className={STATUS[d.status][1]}>{STATUS[d.status][0]}</span>
+                    </div>
                   </div>
-                </div>
-                <span className={`w-fit rounded-full px-2 py-0.5 text-xs ${STATUS[d.status][1]}`}>{STATUS[d.status][0]}</span>
-                <div className="flex gap-1">
-                  <button className={`${btnGhost} px-2 py-1 text-xs`} onClick={() => openDoc(d)}>Изменить</button>
-                  <button className={`${btnGhost} px-2 py-1 text-xs text-red-600`} onClick={() => deleteDoc(d)}>Удалить</button>
-                </div>
-              </li>
-            ))}
+                  <div className="col-start-2 flex gap-4 sm:col-start-auto sm:pt-1.5">
+                    <button className={btnGhost} onClick={() => openDoc(d)}>изменить</button>
+                    <button className={`${btnGhost} text-accent`} onClick={() => deleteDoc(d)}>удалить</button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
 
-      <dialog ref={subjectDialog} className={`${card} m-auto w-[min(92vw,420px)] p-0 text-inherit backdrop:bg-black/40`}>
-        <form onSubmit={saveSubject} noValidate className="space-y-3 p-5">
-          <h3 className="font-semibold">{form.id ? "Изменить предмет" : "Новый предмет"}</h3>
+      <dialog ref={subjectDialog} className={dialog}>
+        <form onSubmit={saveSubject} noValidate className="space-y-5 p-6">
+          <h3 className="font-serif text-xl">{form.id ? "Карточка предмета" : "Новый предмет"}</h3>
           <div><label className={label}>Название</label><input className={input} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><label className={label}>Короткое имя</label><input className={input} placeholder="os" value={form.shortName} onChange={(e) => setForm({ ...form, shortName: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-2">
+          <div><label className={label}>Короткое имя</label><input className={`${input} font-mono`} placeholder="os" value={form.shortName} onChange={(e) => setForm({ ...form, shortName: e.target.value })} /></div>
+          <div className="grid grid-cols-[5rem_1fr] gap-4">
             <div><label className={label}>Семестр</label><input type="number" min={1} max={8} className={input} value={form.semester} onChange={(e) => setForm({ ...form, semester: Number(e.target.value) })} /></div>
             <div><label className={label}>Преподаватель</label><input className={input} value={form.teacher} onChange={(e) => setForm({ ...form, teacher: e.target.value })} /></div>
           </div>
           {formError && <p role="alert" className={err}>{formError}</p>}
-          <div className="flex justify-end gap-2">
-            <button type="button" className={btnGhost} onClick={() => subjectDialog.current?.close()}>Отмена</button>
+          <div className="flex items-center justify-end gap-5 pt-2">
+            <button type="button" className={btnGhost} onClick={() => subjectDialog.current?.close()}>отмена</button>
             <button className={btn}>Сохранить</button>
           </div>
         </form>
       </dialog>
 
-      <dialog ref={docDialog} className={`${card} m-auto w-[min(92vw,420px)] p-0 text-inherit backdrop:bg-black/40`}>
+      <dialog ref={docDialog} className={dialog}>
         {docForm && (
-          <form onSubmit={saveDoc} noValidate className="space-y-3 p-5">
-            <h3 className="font-semibold">Метаданные документа</h3>
+          <form onSubmit={saveDoc} noValidate className="space-y-5 p-6">
+            <h3 className="font-serif text-xl">Карточка документа</h3>
             <div><label className={label}>Название</label><input className={input} value={docForm.title} onChange={(e) => setDocForm({ ...docForm, title: e.target.value })} /></div>
             <div>
               <label className={label}>Предмет</label>
               <select className={input} value={docForm.subjectId} onChange={(e) => setDocForm({ ...docForm, subjectId: e.target.value })}>
-                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.semester} сем)</option>)}
+                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name} · {roman(s.semester)} сем.</option>)}
               </select>
             </div>
             <div>
@@ -169,8 +176,8 @@ export default function LibraryPage() {
               </select>
             </div>
             {formError && <p role="alert" className={err}>{formError}</p>}
-            <div className="flex justify-end gap-2">
-              <button type="button" className={btnGhost} onClick={() => docDialog.current?.close()}>Отмена</button>
+            <div className="flex items-center justify-end gap-5 pt-2">
+              <button type="button" className={btnGhost} onClick={() => docDialog.current?.close()}>отмена</button>
               <button className={btn}>Сохранить</button>
             </div>
           </form>

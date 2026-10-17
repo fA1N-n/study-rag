@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { btn, card, err, input, label, muted } from "@/components/ui";
+import { btn, err, input, kicker, label, roman } from "@/components/ui";
 import { DOC_TYPES, subjects, type DocType } from "@/lib/mock";
 
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -29,6 +29,7 @@ export default function UploadPage() {
   const [error, setError] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
+  const [drag, setDrag] = useState(false);
 
   async function pick(f: File | undefined) {
     setError("");
@@ -63,31 +64,44 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Загрузка документа</h1>
-        <p className={muted}>
-          Markdown в формате сбора данных: frontmatter и разделы «## Слайд N» / «## Страница N». <a href="/sample.md" download className="text-indigo-600 underline">Пример файла</a>
-        </p>
-      </div>
+    <div className="mx-auto max-w-2xl">
+      <p className={kicker}>Поступления</p>
+      <h1 className="mt-2 font-serif text-4xl">Новый документ в фонд</h1>
+      <p className="mt-3 text-sm text-mute">
+        Markdown в формате сбора данных: frontmatter и разделы «## Слайд N» / «## Страница N».{" "}
+        <a href="/sample.md" download className="text-ink underline decoration-accent underline-offset-4 hover:text-accent">Образец файла</a>
+      </p>
 
-      <form onSubmit={submit} noValidate className={`${card} space-y-4`}>
-        <div>
-          <label htmlFor="file" className={label}>Файл (.md, до 5 МБ)</label>
-          <input id="file" type="file" accept=".md,text/markdown" onChange={(e) => pick(e.target.files?.[0])}
-            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-indigo-700 dark:file:bg-indigo-950 dark:file:text-indigo-300" />
-          {file && <p className={`${muted} mt-1 text-xs`}>{file.name} · {(file.size / 1024).toFixed(1)} КБ · найдено единиц: {units}</p>}
-        </div>
+      <form onSubmit={submit} noValidate className="mt-8 space-y-6">
+        <label
+          onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => { e.preventDefault(); setDrag(false); pick(e.dataTransfer.files[0]); }}
+          className={`block cursor-pointer border border-dashed px-6 py-10 text-center transition-colors ${drag ? "border-accent bg-mark/40" : "border-ink/40 hover:border-ink"}`}>
+          <input type="file" accept=".md,text/markdown" className="sr-only" onChange={(e) => pick(e.target.files?.[0])} />
+          {file ? (
+            <>
+              <span className="font-serif text-lg">{file.name}</span>
+              <span className={`${kicker} mt-2 block`}>{(file.size / 1024).toFixed(1)} КБ · единиц: {units} · заменить</span>
+            </>
+          ) : (
+            <>
+              <span className="font-serif text-lg">Перетащите .md сюда или <span className="underline decoration-accent underline-offset-4">выберите файл</span></span>
+              <span className={`${kicker} mt-2 block`}>до 5 МБ</span>
+            </>
+          )}
+        </label>
+
         <div>
           <label htmlFor="title" className={label}>Название</label>
-          <input id="title" className={input} value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input id="title" className={`${input} font-serif text-lg`} value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <label htmlFor="subject" className={label}>Предмет</label>
             <select id="subject" className={input} value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-              <option value="">Выберите…</option>
-              {subjects.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.semester} сем)</option>)}
+              <option value="">выберите…</option>
+              {subjects.map((s) => <option key={s.id} value={s.id}>{s.name} · {roman(s.semester)} сем.</option>)}
             </select>
           </div>
           <div>
@@ -102,18 +116,17 @@ export default function UploadPage() {
 
         {phase !== "idle" && (
           <div>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-              <div className="h-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />
-            </div>
-            <p className={`${muted} mt-1 text-xs`}>
-              {phase === "uploading" ? (progress < 50 ? "Загрузка файла…" : "Разбиение на чанки и эмбеддинги…") : `Готово: ${units} чанков проиндексировано.`}
+            <div className="h-0.5 bg-rule"><div className="h-full bg-ink transition-all" style={{ width: `${progress}%` }} /></div>
+            <p className={`${kicker} mt-2 flex justify-between`}>
+              <span>{phase === "uploading" ? (progress < 50 ? "загрузка файла" : "разбиение на чанки и эмбеддинги") : `в фонде: ${units} чанков проиндексировано`}</span>
+              <span>{progress}%</span>
             </p>
           </div>
         )}
 
-        <div className="flex items-center gap-3">
-          <button className={btn} disabled={phase === "uploading"}>{phase === "uploading" ? "Загружаем…" : "Загрузить"}</button>
-          {phase === "done" && <Link href="/library" className="text-sm text-indigo-600">Открыть библиотеку →</Link>}
+        <div className="flex items-center gap-6 border-t border-ink pt-5">
+          <button className={btn} disabled={phase === "uploading"}>{phase === "uploading" ? "Загружаем…" : "Принять в фонд"}</button>
+          {phase === "done" && <Link href="/library" className="text-sm underline decoration-accent underline-offset-4 hover:text-accent">Открыть указатель →</Link>}
         </div>
       </form>
     </div>

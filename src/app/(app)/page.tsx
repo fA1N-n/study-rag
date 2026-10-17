@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import AnswerView from "@/components/AnswerView";
-import { btn, btnGhost, card, input, muted } from "@/components/ui";
+import { btn, input, kicker, roman } from "@/components/ui";
 import { DOC_TYPES, examples, findAnswer, findDoc, findSubject, subjects, type Answer } from "@/lib/mock";
 
 type Filters = { subjectId: string; semester: string; docType: string };
 type Turn = { q: string; answer: Answer | null; shown: number; phase: "search" | "stream" | "done"; feedback: -1 | 0 | 1 };
 
-const REFUSAL = "В материалах не нашёл ответа на этот вопрос. Попробуйте переформулировать или снять фильтры.";
+const REFUSAL = "В материалах ответа на этот вопрос нет. Попробуйте переформулировать или снять фильтры.";
 
 // Подходит ли найденный ответ под фильтры из UI.
 function matches(a: Answer, f: Filters) {
@@ -49,78 +49,82 @@ export default function ChatPage() {
   }
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: "smooth" });
+    if (turns.length) bottom.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns.length]);
 
   const select = (key: keyof Filters, options: [string, string][], placeholder: string) => (
-    <select aria-label={placeholder} className={input} value={filters[key]} onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}>
+    <select aria-label={placeholder} className={`${input} py-1 text-sm`} value={filters[key]} onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}>
       <option value="">{placeholder}</option>
       {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
     </select>
   );
-  const activeFilters = Object.values(filters).filter(Boolean).length;
 
   return (
-    <div className="flex flex-col gap-4">
-      <details className={card} open>
-        <summary className="cursor-pointer text-sm font-medium">
-          Фильтры{activeFilters > 0 && <span className="ml-2 rounded-full bg-indigo-100 px-2 text-xs text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">{activeFilters}</span>}
-        </summary>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {select("subjectId", subjects.map((s) => [s.id, `${s.name} (${s.semester} сем)`]), "Все предметы")}
-          {select("semester", [1, 2, 3, 4, 5].map((n) => [String(n), `${n} семестр`]), "Все семестры")}
-          {select("docType", DOC_TYPES.map((t) => [t, t]), "Все типы")}
-        </div>
-      </details>
+    <div className="flex flex-col gap-8">
+      <div className="grid items-end gap-3 sm:grid-cols-[auto_1fr_1fr_1fr]">
+        <span className={`${kicker} pb-1.5`}>Искать в</span>
+        {select("subjectId", subjects.map((s) => [s.id, `${s.name} · ${roman(s.semester)}`]), "все предметы")}
+        {select("semester", [1, 2, 3, 4, 5].map((n) => [String(n), `${roman(n)} семестр`]), "все семестры")}
+        {select("docType", DOC_TYPES.map((t) => [t, t]), "все типы документов")}
+      </div>
 
       {turns.length === 0 && (
-        <div className={`${card} text-center`}>
-          <h1 className="text-lg font-semibold">Спросите что-нибудь по учёбе</h1>
-          <p className={`${muted} mb-4`}>Ответ строится только по материалам группы, со ссылкой на документ и слайд.</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {examples.map((e) => <button key={e} className={btnGhost} onClick={() => ask(e)}>{e}</button>)}
-          </div>
-        </div>
+        <section className="py-6">
+          <p className={kicker}>Справочная по материалам пяти семестров</p>
+          <h1 className="mt-3 max-w-3xl font-serif text-4xl leading-[1.15] sm:text-5xl">
+            Спросите — ответим по лекциям и методичкам, <em className="text-accent">со ссылкой на слайд</em>.
+          </h1>
+          <p className={`${kicker} mt-10 mb-2`}>Например</p>
+          <ul className="divide-y divide-rule border-y border-rule">
+            {examples.map((e) => (
+              <li key={e}>
+                <button onClick={() => ask(e)} className="group flex w-full items-baseline justify-between gap-4 py-3 text-left font-serif text-lg hover:text-accent">
+                  {e}
+                  <span className="font-mono text-sm text-mute transition-transform group-hover:translate-x-1 group-hover:text-accent">→</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {turns.map((t, i) => {
         const text = (t.answer?.text ?? REFUSAL).slice(0, t.shown);
         return (
-          <div key={i} className="space-y-2">
-            <div className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-indigo-600 px-4 py-2 text-white">{t.q}</div>
-            <div className={card}>
-              {t.answer && t.phase !== "search" && (
-                <div className="mb-2 flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600 dark:bg-slate-800 dark:text-slate-300">искал в: {t.answer.autoFilter}</span>
-                </div>
-              )}
-              {t.phase === "search" ? (
-                <p className={`${muted} animate-pulse`}>Ищу в материалах…</p>
-              ) : !t.answer ? (
-                <p className="text-amber-700 dark:text-amber-300">{text}</p>
-              ) : (
-                <AnswerView text={text} sources={t.phase === "done" ? t.answer.sources : []} />
-              )}
-              {t.phase === "done" && t.answer && (
-                <div className="mt-3 flex items-center gap-2">
-                  <span className={muted}>Ответ полезен?</span>
-                  {([1, -1] as const).map((v) => (
-                    <button key={v} aria-label={v === 1 ? "Полезно" : "Бесполезно"} onClick={() => update(i, { feedback: t.feedback === v ? 0 : v })}
-                      className={`rounded-lg border px-2 py-1 ${t.feedback === v ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950" : "border-slate-300 dark:border-slate-700"}`}>
-                      {v === 1 ? "👍" : "👎"}
-                    </button>
-                  ))}
-                </div>
-              )}
+          <article key={i} className="border-t border-ink pt-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className={kicker}>Вопрос № {i + 1}</p>
+              {t.answer && t.phase !== "search" && <p className={kicker}>искал в: <span className="text-ink">{t.answer.autoFilter}</span></p>}
             </div>
-          </div>
+            <h2 className="mt-1 mb-4 font-serif text-2xl leading-snug">{t.q}</h2>
+            {t.phase === "search" ? (
+              <p className={`${kicker} caret`}>ищу в материалах</p>
+            ) : !t.answer ? (
+              <p className={`max-w-prose border-l-2 border-accent pl-4 font-serif text-[17px] italic leading-8 ${t.phase === "stream" ? "caret" : ""}`}>{text}</p>
+            ) : (
+              <AnswerView text={text} sources={t.phase === "done" ? t.answer.sources : []} typing={t.phase === "stream"} />
+            )}
+            {t.phase === "done" && t.answer && (
+              <div className="mt-5 flex items-center gap-5">
+                <span className={kicker}>Ответ</span>
+                {([[1, "полезен"], [-1, "не то"]] as const).map(([v, l]) => (
+                  <button key={v} aria-pressed={t.feedback === v} onClick={() => update(i, { feedback: t.feedback === v ? 0 : v })}
+                    className={`font-mono text-xs uppercase tracking-wider underline underline-offset-4 ${
+                      t.feedback === v ? "text-accent decoration-accent decoration-2" : "text-mute decoration-rule hover:text-ink"
+                    }`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            )}
+          </article>
         );
       })}
       <div ref={bottom} />
 
-      <form onSubmit={(e) => { e.preventDefault(); ask(q); }} className="sticky bottom-4 flex gap-2 rounded-xl bg-[var(--background)] p-1">
-        <input className={input} placeholder="Например: чем мьютекс отличается от семафора?" value={q} onChange={(e) => setQ(e.target.value)} maxLength={2000} />
-        <button className={btn} disabled={busy || !q.trim()}>{busy ? "…" : "Спросить"}</button>
+      <form onSubmit={(e) => { e.preventDefault(); ask(q); }} className="sticky bottom-0 -mx-4 flex items-end gap-3 border-t border-ink bg-paper px-4 pt-3 pb-5">
+        <input className={`${input} font-serif text-lg`} placeholder="Ваш вопрос по учёбе…" value={q} onChange={(e) => setQ(e.target.value)} maxLength={2000} aria-label="Вопрос" />
+        <button className={btn} disabled={busy || !q.trim()}>Спросить ↵</button>
       </form>
     </div>
   );

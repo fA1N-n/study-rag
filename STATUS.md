@@ -26,6 +26,7 @@
 - Тема, стек, требования согласованы; `docs/data-collection.md` для Ксюши + Codex.
 - 2026-10-11: git, Next.js 16.4 scaffold, `.gitignore`, `.env.example`, `docs/requirements.md`, `docs/ai-log.md`, `docs/spec.md` v0.1.
 - 2026-10-17 — **часть 1 из 5 (интерфейс)**: 6 экранов на моках (`src/lib/mock.ts`): `/login`, `/` (чат: фильтры, имитация стрима, сноски, отказ, 👍/👎), `/library` (CRUD предметов/документов в `<dialog>`), `/library/[id]` (слайды с якорями), `/upload` (разбор frontmatter, прогресс), `/history`. Lint/tsc/build зелёные, проверено в браузере (десктоп + 375 px). Скриншоты `docs/screenshots/`. План в spec §12 переделан на 5 частей.
+- 2026-10-17 — редизайн «читальный зал» (токены в `globals.css`, общие классы в `src/components/ui.ts`; Literata + IBM Plex Sans/Mono; светлая/тёмная тема). Экраны: Вопрос, Указатель, Поступления, Журнал. Проверено: десктоп, 375 px, dark. Скриншоты пересняты.
 
 ## Now
 - Показ части 1. Ответы на вопросы по ТЗ (eval-экран в P2? одна роль? только .md?) — ждут.
@@ -53,5 +54,6 @@
 
 ## Tried / didn't work
 - `next/link` на `#unit-N` не прокручивает к якорю → обычный `<a>`.
+- Headless Edge `--screenshot` по URL с `#якорем` рисует sticky-шапку со сдвигом — такие кадры снимать во встроенном браузере.
 - Стрелка в `useEffect` с неявным возвратом → краш в проде («i is not a function»); только блочное тело.
 - `params` в странице при `cacheComponents: true` без `generateStaticParams` → ошибка prerender.

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { btn, card, err, input, label, muted } from "@/components/ui";
+import { btn, err, input, kicker, label } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,12 +22,19 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12">
-      <form onSubmit={submit} noValidate className={`${card} w-full max-w-sm space-y-4 p-6`}>
-        <div>
-          <h1 className="text-xl font-semibold">Study RAG</h1>
-          <p className={muted}>Учебный ассистент группы КИ. Вход только для участников.</p>
-        </div>
+    <main className="mx-auto grid w-full max-w-5xl flex-1 items-center gap-12 px-4 py-12 md:grid-cols-[1.2fr_1fr]">
+      <section>
+        <p className={kicker}>Группа КИ · материалы I–V семестров</p>
+        <h1 className="mt-4 font-serif text-5xl leading-[1.05] sm:text-6xl">
+          Читальный <em className="text-accent">зал</em>
+        </h1>
+        <p className="mt-6 max-w-md font-serif text-lg leading-8 text-mute">
+          Лекции, методички и презентации в одном месте. Задайте вопрос — ответ придёт со сноской на документ и слайд.
+        </p>
+      </section>
+
+      <form onSubmit={submit} noValidate className="space-y-6 border-t-[3px] border-double border-ink pt-6">
+        <p className={kicker}>Вход для читателей</p>
         <div>
           <label htmlFor="email" className={label}>Email</label>
           <input id="email" type="email" autoComplete="email" className={input} value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -37,10 +44,8 @@ export default function LoginPage() {
           <input id="password" type="password" autoComplete="current-password" className={input} value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         {error && <p role="alert" className={err}>{error}</p>}
-        <button type="submit" disabled={loading} className={`${btn} w-full`}>
-          {loading ? "Входим…" : "Войти"}
-        </button>
-        <p className={`${muted} text-center text-xs`}>Регистрации нет — аккаунт выдаёт администратор.</p>
+        <button type="submit" disabled={loading} className={`${btn} w-full`}>{loading ? "Входим…" : "Войти"}</button>
+        <p className="text-xs text-mute">Регистрации нет: читательский билет выдаёт администратор.</p>
       </form>
     </main>
   );

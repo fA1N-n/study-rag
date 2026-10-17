@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { kicker } from "./ui";
 
 const links = [
-  { href: "/", label: "Чат" },
-  { href: "/library", label: "Библиотека" },
-  { href: "/upload", label: "Загрузка" },
-  { href: "/history", label: "История" },
+  { href: "/", label: "Вопрос" },
+  { href: "/library", label: "Указатель" },
+  { href: "/upload", label: "Поступления" },
+  { href: "/history", label: "Журнал" },
 ];
 
 export default function Nav() {
@@ -15,26 +16,30 @@ export default function Nav() {
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
-      <div className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-3">
-        <Link href="/" className="mr-2 font-semibold text-indigo-600">Study&nbsp;RAG</Link>
-        <nav className="flex flex-1 gap-1 overflow-x-auto">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
-                active(l.href)
-                  ? "bg-indigo-50 font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-        <Link href="/login" className="text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white">Выйти</Link>
+    <header className="sticky top-0 z-20 border-b-[3px] border-double border-ink bg-paper/95 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-5xl items-end justify-between gap-4 px-4 pt-4">
+        <Link href="/" className="leading-none">
+          <span className="font-serif text-2xl italic">Study RAG</span>
+          <span className={`${kicker} mt-1 hidden sm:block`}>читальный зал · группа КИ</span>
+        </Link>
+        <div className="mb-1 flex items-center gap-4">
+          <span title="Демо-версия: данные условные, изменения не сохраняются"
+            className="-rotate-3 whitespace-nowrap border border-accent px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-accent">
+            демо-данные
+          </span>
+          <Link href="/login" className="font-mono text-xs uppercase tracking-wider text-mute hover:text-accent">Выйти</Link>
+        </div>
       </div>
+      <nav className="mx-auto mt-3 flex max-w-5xl gap-6 overflow-x-auto px-4">
+        {links.map((l) => (
+          <Link key={l.href} href={l.href}
+            className={`whitespace-nowrap border-b-2 pb-2 font-mono text-xs uppercase tracking-wider ${
+              active(l.href) ? "border-accent text-ink" : "border-transparent text-mute hover:text-ink"
+            }`}>
+            {l.label}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }
