@@ -23,24 +23,24 @@
 - Данные: Ксюша + её Codex по `docs/data-collection.md` → `output/<сем>/<предмет>/*.md` (frontmatter, `## Слайд N`/`## Страница N`, `> [!image]`), `manifest.csv`, `questions.csv` (Codex генерирует 60–80, Ксюша ставит keep=0).
 
 ## Done
-- Тема, стек, требования согласованы.
-- `docs/data-collection.md` — инструкция Ксюше + Codex.
-- Этап 1 (2026-10-11): git (`main`, 2 коммита), Next.js 16.4 scaffold (TS, Tailwind 4, ESLint, `src/`), `.gitignore` (материалы КИ, `.env*` кроме `.env.example`), `.gitattributes` (LF), `.env.example`, README-заглушка, `docs/requirements.md`, `docs/ai-log.md` (3 записи; запись 04.10 восстановлена по заметкам — UNCONFIRMED), `docs/spec.md` v0.1.
+- Тема, стек, требования согласованы; `docs/data-collection.md` для Ксюши + Codex.
+- 2026-10-11: git, Next.js 16.4 scaffold, `.gitignore`, `.env.example`, `docs/requirements.md`, `docs/ai-log.md`, `docs/spec.md` v0.1.
+- 2026-10-17 — **часть 1 из 5 (интерфейс)**: 6 экранов на моках (`src/lib/mock.ts`): `/login`, `/` (чат: фильтры, имитация стрима, сноски, отказ, 👍/👎), `/library` (CRUD предметов/документов в `<dialog>`), `/library/[id]` (слайды с якорями), `/upload` (разбор frontmatter, прогресс), `/history`. Lint/tsc/build зелёные, проверено в браузере (десктоп + 375 px). Скриншоты `docs/screenshots/`. План в spec §12 переделан на 5 частей.
 
 ## Now
-- ТЗ на согласовании у пользователя (и у преподавателя).
+- Показ части 1. Ответы на вопросы по ТЗ (eval-экран в P2? одна роль? только .md?) — ждут.
 - Пользователь регистрирует Supabase / OpenRouter / GitHub / Vercel и заполняет `.env.local`.
-- Ксюша собирает данные (статус UNCONFIRMED).
+- Ксюша собирает данные (UNCONFIRMED).
 
-## Next
-Работаем по этапам из spec §12: раз в неделю показ рабочей версии, за чат — один этап (или его часть), не всё сразу.
-- Этап 1 (до показа ~18.10, остаток): правки ТЗ; диаграмма архитектуры; GitHub repo + push; миграции Supabase (таблицы, RLS, bucket; функции поиска — заготовкой); вход (`@supabase/ssr`, `src/proxy.ts`, `/login`); пустые экраны с навигацией; CI (lint, typecheck, build) + Vercel.
-- Этап 2 (19–25.10): CRUD, загрузка .md, парсер/чанкер TDD, импорт, эмбеддинги, просмотр документа.
-- Этап 3 (26.10–01.11): поиск, rerank, чат, история, фидбек.
-- Этап 4 (02–08.11): eval, Docker, README, презентация.
+## Next (spec §12)
+- Часть 2 «Архитектура и инфраструктура»: `docs/architecture.md` (Mermaid); GitHub repo + push; миграции Supabase (таблицы, RLS, bucket); вход `@supabase/ssr` + `src/proxy.ts` + `/login` на настоящем Auth; CI (lint, tsc, build) + Vercel.
+- Часть 3 «Библиотека и данные», часть 4 «Поиск и чат», часть 5 «Качество и сдача».
+За чат — одна часть; не забегать вперёд.
 
 ## Files
-- `docs/data-collection.md`, `docs/requirements.md`, `docs/ai-log.md`, `docs/spec.md`, `STATUS.md`, `README.md`, `.gitignore`, `.gitattributes`, `.env.example`, scaffold Next.js.
+- `docs/*.md`, `docs/screenshots/`, `STATUS.md`, `README.md`, `.gitignore`, `.gitattributes`, `.env.example`.
+- `src/lib/mock.ts`, `src/components/{ui.ts,Nav.tsx,AnswerView.tsx}`, `src/app/layout.tsx`, `src/app/login/`, `src/app/(app)/{layout,page}.tsx`, `library/`, `library/[id]/`, `upload/`, `history/`, `public/sample.md`.
+- Вне репо: `C:\Dmitry\.claude\launch.json` (preview: `npm --prefix C:/Projects/study-rag run start`; нужна `npm run build` перед ним).
 
 ## Notes
 - Next.js 16: читать `node_modules/next/dist/docs/` перед кодом (см. `AGENTS.md`); `middleware` → `proxy`.
@@ -49,6 +49,9 @@
 
 ## Deviations from plan
 - Экран eval перенесён в P2 (CLI + `docs/eval.md`) — ждёт подтверждения.
+- План: 4 этапа → 5 частей, первой идёт UI-прототип на моках (по просьбе пользователя, для отчётности).
 
 ## Tried / didn't work
-- —
+- `next/link` на `#unit-N` не прокручивает к якорю → обычный `<a>`.
+- Стрелка в `useEffect` с неявным возвратом → краш в проде («i is not a function»); только блочное тело.
+- `params` в странице при `cacheComponents: true` без `generateStaticParams` → ошибка prerender.
