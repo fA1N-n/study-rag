@@ -27,11 +27,14 @@
 - 2026-11-07 ядро разметки (fc8dcd8): `src/lib/labeling/` — units, batching, schema (zod), merge A/B/арбитр, kappa, pii; критерии `docs/labeling-core.md`; TDD с двумя критиками (Opus). 99 тестов. На реальных данных: 572 документа, 5 787 единиц (совпало с frontmatter у всех), ПДн в 349 документах, 0,5 с.
 - 2026-11-07 заготовки этапа 2 без ключей (0fa3884): миграции `supabase/migrations/` (схема v2, RLS, `match_chunks` RRF, `neighbor_chunks`, `claim_batches`; Storage + pg_cron отдельным файлом), 21 SQL/RLS-тест в PGlite (мутационная проверка: ломаются нужные), `/api/health`, `.github/workflows/ci.yml`, `Dockerfile`, `.env.example` под v2, Next 16.4.5 (уязвимость 16.4.0).
 - Всего тестов: 120, lint/tsc/build чистые.
+- 2026-11-07 офлайн-разметка A (скрипты `scripts/labeling/`, данные `data/labeling/` вне git): 29 батчей; правила v1 (выборка 30 → критик Opus на 20, 16 замечаний приняты; `ruleset_v1.json`, status draft — утверждение пользователем задним числом); разметчик A (субагенты Sonnet) 572/572, 0 ошибок валидатора, ср. уверенность 0,856, < 0,7 — 87 (15,2 %); `labels_A.jsonl`, `summary_A.md`, `gold_candidates.csv` (80), `progress.md`.
 
 ## Now
 - Ждём ключи от пользователя (этап 2): Supabase, OpenRouter, `gh auth login`, `npx supabase login`, Vercel, `.env.local`. Без них этапы 2–8 не проверить.
+- Разметчик B — Codex по `scripts/labeling/labeler-prompt.md` в `data/labeling/B/` (промпт выдан пользователю). Золотой набор — пользователь вручную в `gold_candidates.csv`.
 
 ## Next
+0. Арбитр (новый чат Claude Code): `validate.ts B`, mergeLabels по A/B, арбитр по `needs_referee`, каппа по полям, очередь человеку, импорт в БД при ключах. Перенести доп. маскирование ПДн из `prepare.ts` в `pii.ts` через TDD.
 1. Без ключей: ядро загрузки (этап 3) через TDD — zip (fflate, имена CP866 через `TextDecoder('ibm866')`), pdf (unpdf, по страницам), docx (mammoth → разделы), txt/md → единицы, sha256, дедуп, маскирование в `preview`.
 2. С ключами: этап 2 — репо на GitHub, `supabase db push`, Vault-секреты, вход + демо-вход (`proxy`), Vercel, CI зелёный.
 3. Этапы 3–8 по `docs/plan.md`; экраны — по `docs/design.md` (вариант A), проверка в браузере: десктоп, 375 px, тёмная тема.
@@ -39,12 +42,19 @@
 ## Files (этот чат)
 - Новые: `docs/design.md`, `docs/design/*`, `docs/screenshots/design/*`, `docs/labeling-core.md`, `src/lib/labeling/*`, `supabase/migrations/*`, `supabase/tests/db.test.ts`, `src/app/api/health/route.ts`, `.github/workflows/ci.yml`, `Dockerfile`, `.dockerignore`.
 - Изменены: `src/app/globals.css`, `src/app/layout.tsx`, `next.config.ts`, `package.json`, `.env.example`, `docs/ai-log.md`, `docs/requirements.md`.
+- Разметка: новые `scripts/labeling/*` (ts-resolve.mjs, common, prepare, sample, build-ruleset, validate, finalize, labeler-prompt.md, README.md); изменены `docs/ai-log.md`, `docs/requirements.md`, `STATUS.md`.
 - Вне репо: `C:\Dmitry\.claude\launch.json` — конфиги `study-rag` (start), `study-rag-dev`, `design-mocks` (python http.server на 8765).
 
 ## Deviations from plan
 - Критерии TDD не согласовывались отдельно (пользователь: «без промежуточных согласований») — записаны в `docs/labeling-core.md`.
 - Миграция написана до SQL-тестов (не чистый TDD); компенсировано мутационной проверкой.
 - Пакет `@electric-sql/pglite-pgvector` добавлен вторым вопросом (в PGlite 0.5 pgvector вынесен отдельно).
+- Разметка: правила v1 сразу с правками критика (одна итерация, версия осталась 1); «Английский язык» слит с «Иностранный язык (английский)»; добавлены типы «статья», «организационное»; teacher выводится из карты по предмету (allowedBy). Разметчики 008/009 запускали Python (запись/проверка JSON) вопреки промпту; один раз было 5 параллельных агентов вместо 4.
+
+## Tried / didn't work (разметка)
+- maskPii пропускает ФИО с отчеством, КАПС, паспорт, `<br>` — доп. эвристика в `prepare.ts`; фамилии студентов в именах файлов не маскируются (UNCONFIRMED, сколько таких).
+- 104 имени файлов `����` не восстановить; CP866-как-CP437 чинится `fixMojibake` в `scripts/labeling/common.ts`.
+- `rm -rf` в Bash запрещён автоматикой — `prepare.ts` сам чистит `inputs/`.
 
 ## Tried / didn't work
 - Headless Edge: в песочнице не запускается; в bash-цикле `\\$v` в пути давал файлы `design$v-…png` — использовать `docs/design/shot.sh` (по кадру, вне песочницы).
