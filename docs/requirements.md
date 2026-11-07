@@ -9,7 +9,7 @@
 - [ ] Адаптивная вёрстка (мобильный + десктоп)
 - [ ] Формы с валидацией (zod на клиенте и сервере + CHECK в БД)
 - [ ] Состояния загрузки, ошибок, пустые состояния
-- [ ] Postgres, ≥3 связанных таблиц (datasets → documents → labels / chunks, rulesets, label_jobs → batches, questions)
+- [ ] Postgres, ≥3 связанных таблиц (datasets → documents → labels / chunks, rulesets, label_jobs → batches, questions) — миграция `supabase/migrations/`, проверена в PGlite; в Supabase не применена
 - [ ] CRUD в UI: датасеты (создать / переименовать / удалить)
 - [ ] CRUD в UI: документы (загрузить / править метки / удалить), правила (сгенерировать / править / утвердить)
 - [ ] Аутентификация (Supabase Auth, регистрация закрыта, кнопка «Войти как проверяющий» с лимитами), RLS
@@ -38,9 +38,9 @@
 
 ## Инфраструктура
 - [ ] Деплой онлайн (Vercel), ссылка в README
-- [ ] CI/CD: GitHub Actions (lint, typecheck, тесты, build) + автодеплой Vercel
-- [ ] Dockerfile (сборка и запуск локально)
-- [ ] Тесты (Vitest) — ядро разметки 99 unit (`npm test`); SQL/RLS и smoke — впереди
+- [ ] CI/CD: GitHub Actions (lint, typecheck, тесты, build) + автодеплой Vercel — `.github/workflows/ci.yml` написан, не запускался (нет GitHub)
+- [ ] Dockerfile (сборка и запуск локально) — написан, standalone-сборка и `/api/health` проверены; `docker build` UNCONFIRMED (Docker не установлен)
+- [ ] Тесты (Vitest) — 120: ядро разметки 99 unit + 21 SQL/RLS в PGlite (`supabase/tests/db.test.ts`); smoke — впереди
 - [ ] Git с понятной историей коммитов
 - [ ] Материалы КИ не в публичном репо (.gitignore), в репо только код и синтетические фикстуры
 
