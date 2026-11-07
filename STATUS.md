@@ -11,7 +11,7 @@
 - RAG не упрощать (гибрид, rerank, переписывание, соседи, отказ, сноски).
 - Новые npm-пакеты — пачкой по согласованию. Утверждены и стоят (2026-11-07): zod, vitest, @supabase/supabase-js, @supabase/ssr, fflate, unpdf, mammoth, @electric-sql/pglite + pglite-pgvector, @playwright/test, supabase CLI, docx, pptxgenjs.
 - Команды для пользователя — Windows PowerShell 5.1.
-- **Денег не тратим (решение пользователя 2026-11-07).** Только бесплатные тарифы: Supabase Free, Vercel Hobby, GitHub; LLM — бесплатные модели OpenRouter (`:free`, 50 запросов/день; DeepSeek/Qwen бесплатных нет, есть `google/gemma-4-31b-it:free`); эмбеддинги — Gemini API free tier (AI Studio, лимиты UNCONFIRMED, данные free tier Google может использовать — шлём только маскированный текст); rerank — тем же бесплатным LLM; основной датасет размечаем агентами в Claude Code (A, арбитр) и Codex (B) по правилам приложения и импортируем в БД.
+- **Денег не тратим (решение пользователя 2026-11-07).** Только бесплатные тарифы: Supabase Free, Vercel Hobby, GitHub; LLM — бесплатные модели OpenRouter (`:free`, 50 запросов/день; DeepSeek/Qwen бесплатных нет, есть `google/gemma-4-31b-it:free`); эмбеддинги — Cloudflare Workers AI `@cf/baai/bge-m3` (1024 измерения = `halfvec(1024)`, бесплатно 10 000 neurons/день ≈ 9 млн токенов; Google нельзя — решение пользователя; запасной вариант — локальная модель через transformers.js, новый пакет); rerank — тем же бесплатным LLM; основной датасет размечаем агентами в Claude Code (A, арбитр) и Codex (B) по правилам приложения и импортируем в БД.
 - Режим работы: «делай по плану до конца», останавливаться только на выборе дизайна (сделан), новых пакетах, отсутствии ключей. На этапе отчёта спросить состав команды для титульника.
 
 ## Key decisions
