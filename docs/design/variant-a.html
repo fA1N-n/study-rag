@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вариант A — Консоль</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f7f8;--panel:#fff;--sub:#f1f1f3;--ink:#18181b;--mute:#71717a;--line:#e4e4e7;--acc:#4f46e5;--acc-soft:#eef2ff;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--hl:#fef08a;color-scheme:light}
+:root[data-theme=dark]{--bg:#0b0b0d;--panel:#131316;--sub:#1b1b1f;--ink:#ececf1;--mute:#8b8b95;--line:#27272c;--acc:#818cf8;--acc-soft:#1e1b4b;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--hl:#5b4d0b;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0b0b0d;--panel:#131316;--sub:#1b1b1f;--ink:#ececf1;--mute:#8b8b95;--line:#27272c;--acc:#818cf8;--acc-soft:#1e1b4b;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--hl:#5b4d0b;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+.mono{font-family:"JetBrains Mono",monospace}
+button{font:inherit;color:inherit;cursor:pointer}
+header{display:flex;align-items:center;gap:16px;height:48px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.logo{font-weight:700;letter-spacing:-.02em}.logo span{color:var(--acc)}
+.crumb{color:var(--mute);font-size:13px}
+nav{display:flex;gap:2px;margin-left:auto}
+nav button{border:0;background:none;padding:6px 10px;border-radius:6px;color:var(--mute);font-size:13px}
+nav button.on{background:var(--sub);color:var(--ink)}
+.screen{display:none}
+:root[data-screen=chat] #chat,:root[data-screen=board] #board{display:block}
+/* chat */
+.cols{display:grid;grid-template-columns:240px minmax(0,1fr) 400px;height:calc(100vh - 48px)}
+.col{overflow:auto;border-right:1px solid var(--line)}
+.col:last-child{border-right:0;background:var(--panel)}
+.side{padding:16px;background:var(--panel)}
+h4{margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.f{margin-bottom:18px}
+.sel{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;background:var(--bg);margin-bottom:6px}
+.sel b{font-weight:500}.sel i{font-style:normal;color:var(--mute);font-size:12px}
+.hist a{display:block;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist a.on{background:var(--acc-soft);color:var(--acc)}
+.main{padding:24px 32px;max-width:760px}
+.q{font-size:18px;font-weight:600;margin:0 0 10px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12px;background:var(--panel)}
+.chip.auto{border-color:var(--acc);color:var(--acc)}
+.chip x{opacity:.6}
+.rw{font-size:12px;color:var(--mute);margin-bottom:18px}
+.ans p{margin:0 0 12px;font-size:15px;line-height:1.65}
+sup a{display:inline-block;min-width:18px;padding:0 4px;margin-left:2px;border-radius:4px;background:var(--acc-soft);color:var(--acc);font:500 11px/16px "JetBrains Mono",monospace;text-align:center;text-decoration:none}
+sup a.on{background:var(--acc);color:#fff}
+.srcs{display:grid;gap:6px;margin-top:20px}
+.src{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--panel);font-size:13px}
+.src.on{border-color:var(--acc)}
+.src .n{color:var(--acc)}
+.src .u{margin-left:auto;color:var(--mute)}
+.fb{display:flex;gap:8px;margin-top:16px}.fb button{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 10px}
+.ask{position:sticky;bottom:0;margin-top:24px;display:flex;gap:8px;padding:12px 0;background:var(--bg)}
+.ask input{flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel);color:var(--ink);font:inherit}
+.btn{border:0;border-radius:8px;padding:10px 14px;background:var(--acc);color:#fff;font-weight:600}
+.viewer{padding:16px 20px}
+.vh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.vh b{font-size:14px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 14px}
+.tag{font-size:11px;border-radius:4px;padding:1px 6px;background:var(--sub);color:var(--mute)}
+.unit{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:10px;background:var(--bg)}
+.unit.dim{opacity:.55}
+.unit h5{margin:0 0 8px;font:500 11px "JetBrains Mono",monospace;color:var(--mute)}
+.unit p{margin:0 0 8px;font-size:13px}
+mark{background:var(--hl);color:inherit;padding:0 2px;border-radius:2px}
+.pager{display:flex;justify-content:space-between;font-size:12px;color:var(--mute)}
+/* board */
+.bwrap{padding:20px 24px;display:grid;gap:16px;grid-template-columns:repeat(4,1fr)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi .v{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.kpi .l{font-size:12px;color:var(--mute)}
+.kpi .d{font-size:12px;color:var(--ok)}
+.span4{grid-column:span 4}.span3{grid-column:span 3}.span2{grid-column:span 2}
+.bar{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.bar .grow{flex:1;height:8px;border-radius:99px;background:var(--sub);overflow:hidden;display:flex}
+.bar .grow i{display:block;height:100%}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mute);flex-wrap:wrap}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,26px);gap:4px;margin-top:12px}
+.cell{aspect-ratio:1;border-radius:3px;background:var(--sub);position:relative}
+.s-done{background:var(--ok)}.s-run{background:var(--acc);animation:pulse 1.2s infinite}.s-ref{background:var(--warn)}.s-fail{background:var(--bad)}
+@keyframes pulse{50%{opacity:.45}}
+.lanes{display:grid;gap:10px}
+.lane{display:grid;grid-template-columns:110px 1fr 90px;gap:12px;align-items:center;font-size:13px}
+.lane .who b{display:block}.lane .who i{font-style:normal;color:var(--mute);font-size:11px}
+.ev{display:flex;gap:4px;overflow:hidden}
+.ev span{flex:none;font:11px "JetBrains Mono",monospace;border:1px solid var(--line);border-radius:4px;padding:2px 6px;background:var(--bg)}
+.ev span.cur{border-color:var(--acc);color:var(--acc)}
+.lane .r{text-align:right;color:var(--mute);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;color:var(--mute);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line)}
+.pill{font-size:11px;border-radius:99px;padding:1px 8px}
+.p-ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.p-warn{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.p-bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.tabs{display:none}
+@media (max-width:767px){
+  header{gap:10px}.crumb{display:none}
+  .cols{display:block;height:auto}
+  .col{display:none;border:0}
+  :root[data-tab=filters] .c-side,:root[data-tab=answer] .c-main,:root[data-tab=source] .c-src{display:block}
+  .tabs{display:flex;position:sticky;top:48px;z-index:4;background:var(--panel);border-bottom:1px solid var(--line)}
+  .tabs button{flex:1;border:0;background:none;padding:10px;color:var(--mute);font-size:13px;border-bottom:2px solid transparent}
+  .tabs button.on{color:var(--ink);border-color:var(--acc)}
+  .main{padding:16px}
+  .bwrap{grid-template-columns:1fr 1fr;padding:16px;gap:10px}
+  .span4,.span3,.span2{grid-column:span 2}
+  .lane{grid-template-columns:80px 1fr}.lane .r{display:none}
+  .hide-m{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">study<span>/</span>rag</div>
+  <div class="crumb">Материалы КИ · 568 документов</div>
+  <nav><button data-go="chat">Чат</button><button data-go="board">Разметка</button><button data-theme-toggle>◐</button></nav>
+</header>
+
+<section id="chat" class="screen">
+  <div class="tabs"><button data-tab="filters">Фильтры</button><button data-tab="answer">Ответ</button><button data-tab="source">Источник [1]</button></div>
+  <div class="cols">
+    <aside class="col c-side side">
+      <div class="f"><h4>Фильтры из схемы</h4>
+        <div class="sel"><b>Предмет</b><i>Опер. системы ▾</i></div>
+        <div class="sel"><b>Семестр</b><i>5 ▾</i></div>
+        <div class="sel"><b>Тип</b><i>лекция ▾</i></div>
+        <div class="sel"><b>Преподаватель</b><i>все ▾</i></div>
+      </div>
+      <div class="f hist"><h4>История</h4>
+        <a class="on" href="#">Чем семафор отличается от мьютекса?</a>
+        <a href="#">Алгоритм банкира — пример</a>
+        <a href="#">Что такое страничная подкачка</a>
+        <a href="#">Требования к отчёту по ЛР 3</a>
+      </div>
+    </aside>
+    <main class="col c-main"><div class="main">
+      <h1 class="q">Чем семафор отличается от мьютекса?</h1>
+      <div class="meta"><span class="chip auto">Предмет: Операционные системы <x>×</x></span><span class="chip auto">Семестр: 5 <x>×</x></span><span class="chip">Тип: лекция <x>×</x></span></div>
+      <div class="rw mono">запрос → «семафор мьютекс различия синхронизация процессов» · 6 фрагментов · 1,8 с</div>
+      <div class="ans">
+        <p>Мьютекс — это двоичный замок с владельцем: освободить его может только тот поток, который захватил<sup><a class="on" href="#">1</a></sup>. Семафор — счётчик без владельца, операции P и V может выполнять любой процесс<sup><a href="#">1</a></sup>.</p>
+        <p>Поэтому семафор подходит для ограничения числа одновременных доступов к ресурсу (например, пул из N буферов), а мьютекс — для взаимного исключения в критической секции<sup><a href="#">2</a></sup>. Двоичный семафор похож на мьютекс, но не защищает от освобождения «чужим» потоком<sup><a href="#">3</a></sup>.</p>
+      </div>
+      <div class="srcs">
+        <div class="src on"><span class="n mono">[1]</span>Лекция 7. Синхронизация процессов<span class="u mono">слайд 12</span></div>
+        <div class="src"><span class="n mono">[2]</span>Лекция 7. Синхронизация процессов<span class="u mono">слайд 14</span></div>
+        <div class="src"><span class="n mono">[3]</span>Методичка к ЛР 4. Потоки в Windows<span class="u mono">стр. 9</span></div>
+      </div>
+      <div class="fb"><button>👍</button><button>👎</button></div>
+      <div class="ask"><input placeholder="Спросите по материалам…"><button class="btn">Спросить</button></div>
+    </div></main>
+    <aside class="col c-src viewer">
+      <div class="vh"><b>Лекция 7. Синхронизация процессов</b><span class="mono crumb">1 / 3</span></div>
+      <div class="tags"><span class="tag">Операционные системы</span><span class="tag">5 семестр</span><span class="tag">лекция</span><span class="tag">agreed</span></div>
+      <div class="unit dim"><h5>СЛАЙД 11</h5><p>Критическая секция — участок кода, где процесс обращается к общему ресурсу…</p></div>
+      <div class="unit"><h5>СЛАЙД 12 · источник [1]</h5><p><mark>Мьютекс имеет владельца: разблокировать его может только захвативший поток.</mark></p><p><mark>Семафор — целочисленный счётчик; P() уменьшает, V() увеличивает,</mark> вызвать их может любой процесс.</p></div>
+      <div class="unit dim"><h5>СЛАЙД 13</h5><p>Пример: производитель — потребитель на двух семафорах и мьютексе…</p></div>
+      <div class="pager mono"><span>← слайд 11</span><span>открыть документ</span><span>слайд 13 →</span></div>
+    </aside>
+  </div>
+</section>
+
+<section id="board" class="screen">
+  <div class="bwrap">
+    <div class="card kpi"><div class="l">Размечено</div><div class="v">342 / 568</div><div class="d">+38 за минуту</div></div>
+    <div class="card kpi"><div class="l">Согласие A/B (κ)</div><div class="v">0,81</div><div class="d">по предмету 0,86</div></div>
+    <div class="card kpi"><div class="l">Авто / арбитр / человек</div><div class="v">74 / 19 / 7 %</div><div class="l">порог уверенности 0,7</div></div>
+    <div class="card kpi"><div class="l">Токены · стоимость</div><div class="v">1,9 M · $0,52</div><div class="l">прогноз $0,87</div></div>
+    <div class="card span4">
+      <div class="bar"><h4 style="margin:0">Батчи · правила v2</h4><div class="grow"><i style="width:58%;background:var(--ok)"></i><i style="width:6%;background:var(--acc)"></i><i style="width:2%;background:var(--bad)"></i></div><span class="mono crumb">22 / 38</span><button class="btn" style="padding:6px 12px">Остановить</button></div>
+      <div class="legend"><span><b style="background:var(--ok)"></b>готов</span><span><b style="background:var(--acc)"></b>в работе</span><span><b style="background:var(--warn)"></b>у арбитра</span><span><b style="background:var(--bad)"></b>ошибка, повтор</span><span><b style="background:var(--sub)"></b>в очереди</span></div>
+      <div class="grid" id="cells"></div>
+    </div>
+    <div class="card span2"><h4>Агенты</h4><div class="lanes">
+      <div class="lane"><div class="who"><b>Разметчик A</b><i>deepseek-v3</i></div><div class="ev"><span>#21 ✓</span><span>#22 ✓</span><span class="cur">#23 …</span><span class="cur">#24 …</span></div><div class="r mono">410 ток/с</div></div>
+      <div class="lane"><div class="who"><b>Разметчик B</b><i>qwen-2.5-72b</i></div><div class="ev"><span>#21 ✓</span><span>#22 ✓</span><span class="cur">#23 …</span></div><div class="r mono">290 ток/с</div></div>
+      <div class="lane"><div class="who"><b>Арбитр</b><i>deepseek-r1</i></div><div class="ev"><span>doc 418 ✓</span><span class="cur">doc 431 …</span></div><div class="r mono">12 в очереди</div></div>
+      <div class="lane"><div class="who"><b>Валидатор</b><i>zod</i></div><div class="ev"><span>отклонено 9</span><span>семестр≠предмет 4</span></div><div class="r mono">ок</div></div>
+    </div></div>
+    <div class="card span2"><h4>Последние решения</h4><table>
+      <tr><th>Документ</th><th>Поле</th><th class="hide-m">A / B</th><th>Итог</th></tr>
+      <tr><td>Лекция 7. Синхронизация</td><td>тип</td><td class="hide-m">лекция / лекция</td><td><span class="pill p-ok">agreed</span></td></tr>
+      <tr><td>ЛР 3. Отчёт (ПДн скрыты)</td><td>предмет</td><td class="hide-m">ОС / Архитектура ЭВМ</td><td><span class="pill p-warn">арбитр</span></td></tr>
+      <tr><td>Конспект 12.03</td><td>семестр</td><td class="hide-m">4 / 5</td><td><span class="pill p-bad">человеку</span></td></tr>
+      <tr><td>Методичка ЛР 4</td><td>тип</td><td class="hide-m">методичка / методичка</td><td><span class="pill p-ok">agreed</span></td></tr>
+    </table></div>
+  </div>
+</section>
+
+<script>
+const R=document.documentElement,P=new URLSearchParams(location.search);
+R.dataset.screen=P.get('screen')||'chat';R.dataset.tab=P.get('tab')||'answer';if(P.get('theme'))R.dataset.theme=P.get('theme');
+const mark=()=>{document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===R.dataset.screen));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===R.dataset.tab))};
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.go)R.dataset.screen=t.dataset.go;if(t.dataset.tab)R.dataset.tab=t.dataset.tab;if(t.hasAttribute('data-theme-toggle'))R.dataset.theme=(R.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'))==='dark'?'light':'dark';mark()});
+mark();
+const st=i=>i===9||i===15?'s-ref':i===13?'s-fail':i<20?'s-done':i===20||i===21?'s-run':'';
+document.getElementById('cells').innerHTML=Array.from({length:38},(_,i)=>`<div class="cell ${st(i)}" title="батч #${i+1}"></div>`).join('');
+</script>
+</body>
+</html>

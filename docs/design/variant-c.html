@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вариант C — Пульт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fafaf7;--panel:#fff;--sub:#f0f0ea;--ink:#111110;--mute:#6b6b63;--line:#deded6;--acc:#5b21b6;--on-acc:#fff;--hot:#ea580c;--ok:#15803d;--bad:#b91c1c;--hl:#ede9fe;color-scheme:light}
+:root[data-theme=dark]{--bg:#09090a;--panel:#111113;--sub:#19191c;--ink:#f4f4f0;--mute:#8a8a84;--line:#26262a;--acc:#c4f042;--on-acc:#0a0a0a;--hot:#ff8a3d;--ok:#c4f042;--bad:#ff5d5d;--hl:#2c3a0e;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#09090a;--panel:#111113;--sub:#19191c;--ink:#f4f4f0;--mute:#8a8a84;--line:#26262a;--acc:#c4f042;--on-acc:#0a0a0a;--hot:#ff8a3d;--ok:#c4f042;--bad:#ff5d5d;--hl:#2c3a0e;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+.mono,small,h4{font-family:"IBM Plex Mono",monospace}
+.disp{font-family:Unbounded,sans-serif;letter-spacing:-.02em}
+button{font:inherit;color:inherit;cursor:pointer}
+header{display:flex;align-items:stretch;height:52px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;background:var(--bg)}
+.logo{display:flex;align-items:center;padding:0 18px;font:700 15px Unbounded,sans-serif;border-right:1px solid var(--line)}
+.logo b{color:var(--acc);margin-left:2px}
+.st{display:flex;align-items:center;gap:8px;padding:0 18px;font:12px "IBM Plex Mono",monospace;color:var(--mute);border-right:1px solid var(--line)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+nav{margin-left:auto;display:flex}
+nav button{border:0;border-left:1px solid var(--line);background:none;padding:0 20px;font:500 12px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--mute)}
+nav button.on{background:var(--acc);color:var(--on-acc)}
+.screen{display:none}
+:root[data-screen=chat] #chat,:root[data-screen=board] #board{display:block}
+.cols{display:grid;grid-template-columns:220px minmax(0,1fr) minmax(340px,38%);height:calc(100vh - 52px)}
+.col{overflow:auto;border-right:1px solid var(--line)}.col:last-child{border:0}
+h4{margin:0;padding:10px 16px;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--mute);border-bottom:1px solid var(--line)}
+.fl{border-bottom:1px solid var(--line);padding:10px 16px}
+.fl small{display:block;color:var(--mute);font-size:10px;text-transform:uppercase;letter-spacing:.1em}
+.fl div{font-weight:600;display:flex;justify-content:space-between}
+.fl.auto div::after{content:"AUTO";font:500 10px "IBM Plex Mono",monospace;color:var(--on-acc);background:var(--acc);padding:1px 5px;align-self:center}
+.h{padding:9px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--mute)}
+.h.on{color:var(--ink);box-shadow:inset 3px 0 var(--acc)}
+.main{padding:28px 36px 0;max-width:780px}
+.qq{font-size:24px;margin:0 0 14px;line-height:1.25}
+.trace{display:grid;grid-template-columns:repeat(4,auto);justify-content:start;gap:0;border:1px solid var(--line);margin-bottom:24px;font:11px "IBM Plex Mono",monospace;color:var(--mute)}
+.trace span{padding:6px 10px;border-right:1px solid var(--line)}.trace span:last-child{border:0}
+.trace b{color:var(--ink);font-weight:500}
+.claim{display:grid;grid-template-columns:36px 1fr;gap:0 10px;padding:12px 0;border-top:1px solid var(--line)}
+.claim .n{font:500 12px "IBM Plex Mono",monospace;width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line)}
+.claim.on .n{background:var(--acc);color:var(--on-acc);border-color:var(--acc)}
+.claim p{margin:0;font-size:15px;line-height:1.65}
+.claim small{display:block;color:var(--mute);font-size:11px;margin-top:4px}
+.fb{display:flex;gap:0;margin:16px 0;border:1px solid var(--line);width:fit-content}.fb button{border:0;border-right:1px solid var(--line);background:none;padding:6px 14px}.fb button:last-child{border:0}
+.ask{position:sticky;bottom:0;display:flex;border:1px solid var(--ink);background:var(--panel);margin:20px 0}
+.ask input{flex:1;border:0;background:none;padding:14px 16px;color:var(--ink);font:inherit;outline:none}
+.btn{border:0;background:var(--acc);color:var(--on-acc);padding:0 20px;font:600 12px "IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.08em}
+.c-src{background:var(--panel)}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.big{font:700 44px/1 Unbounded,sans-serif;color:var(--acc)}
+.sh b{display:block;font-size:15px}
+.sh small{color:var(--mute);font-size:11px}
+.u{padding:16px 20px;border-bottom:1px solid var(--line)}
+.u.dim{opacity:.45}
+.u small{color:var(--mute);font-size:11px;letter-spacing:.08em}
+.u p{margin:6px 0}
+mark{background:var(--hl);color:inherit;box-shadow:inset 0 -2px var(--acc)}
+.nb{display:flex;font:12px "IBM Plex Mono",monospace}.nb span{flex:1;padding:12px;text-align:center;border-right:1px solid var(--line);color:var(--mute)}.nb span:last-child{border:0}
+/* board */
+.hero{display:grid;grid-template-columns:1.4fr repeat(3,1fr);border-bottom:1px solid var(--line)}
+.hero>div{padding:18px 22px;border-right:1px solid var(--line)}.hero>div:last-child{border:0}
+.hero small{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.hero .v{font:700 34px/1.1 Unbounded,sans-serif;margin-top:6px}
+.hero .v em{font-style:normal;color:var(--mute);font-size:18px}
+.meter{height:6px;background:var(--sub);margin-top:12px}.meter i{display:block;height:100%;width:60%;background:var(--acc)}
+.flow{display:grid;grid-template-columns:1fr 24px 1fr 24px 1fr 24px 1fr 24px 1fr;align-items:center;padding:28px 22px;border-bottom:1px solid var(--line)}
+.node{border:1px solid var(--line);background:var(--panel);padding:14px}
+.node.live{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.node small{color:var(--mute);font-size:10px;text-transform:uppercase;letter-spacing:.1em}
+.node .v{font:700 22px Unbounded,sans-serif;margin:4px 0}
+.node .m{font:11px "IBM Plex Mono",monospace;color:var(--mute)}
+.pair{display:grid;gap:8px}
+.arr{height:1px;background:var(--line);position:relative}.arr::after{content:"";position:absolute;right:0;top:-3px;border:3px solid transparent;border-left-color:var(--mute)}
+.split{display:grid;grid-template-columns:1fr 1fr}
+.split>div{border-right:1px solid var(--line)}.split>div:last-child{border:0}
+.log{font:12px/1.7 "IBM Plex Mono",monospace;padding:12px 22px}
+.log div{display:grid;grid-template-columns:70px 80px 1fr;gap:8px;color:var(--mute)}
+.log b{font-weight:500;color:var(--ink)}
+.log .w{color:var(--hot)}.log .e{color:var(--bad)}.log .k{color:var(--ok)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:90px;padding:12px 22px}
+.spark i{flex:1;background:var(--acc);opacity:.8}
+.tabs{display:none}
+@media (max-width:767px){
+  .st{display:none}nav button{padding:0 12px}
+  .cols{display:block;height:auto}
+  .col{display:none;border:0}
+  :root[data-tab=filters] .c-side,:root[data-tab=answer] .c-main,:root[data-tab=source] .c-src{display:block}
+  .tabs{display:flex;border-bottom:1px solid var(--line);position:sticky;top:52px;z-index:4;background:var(--bg)}
+  .tabs button{flex:1;border:0;border-right:1px solid var(--line);background:none;padding:10px;font:500 11px "IBM Plex Mono",monospace;text-transform:uppercase;color:var(--mute)}
+  .tabs button.on{color:var(--ink);box-shadow:inset 0 -2px var(--acc)}
+  .main{padding:18px 16px 0}.qq{font-size:19px}
+  .trace{grid-template-columns:1fr 1fr}
+  .hero{grid-template-columns:1fr 1fr}.hero>div{border-bottom:1px solid var(--line)}.hero>div:first-child{grid-column:span 2}
+  .hero .v{font-size:24px}
+  .flow{grid-template-columns:1fr;gap:8px;padding:16px}.arr{display:none}
+  .split{grid-template-columns:1fr}.split>div{border:0;border-bottom:1px solid var(--line)}
+  .log{padding:12px 16px}.log div{grid-template-columns:52px 1fr}.log div span:nth-child(2){display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">STUDY<b>RAG</b></div>
+  <div class="st"><span class="dot"></span>Материалы КИ · 568 док. · индекс готов</div>
+  <nav><button data-go="chat">Чат</button><button data-go="board">Разметка</button><button data-theme-toggle>◐</button></nav>
+</header>
+
+<section id="chat" class="screen">
+  <div class="tabs"><button data-tab="filters">Фильтры</button><button data-tab="answer">Ответ</button><button data-tab="source">Источник</button></div>
+  <div class="cols">
+    <aside class="col c-side">
+      <h4>Фильтры · схема v2</h4>
+      <div class="fl auto"><small>предмет</small><div>Операционные системы</div></div>
+      <div class="fl auto"><small>семестр</small><div>5</div></div>
+      <div class="fl"><small>тип</small><div>лекция</div></div>
+      <div class="fl"><small>преподаватель</small><div style="color:var(--mute);font-weight:400">любой</div></div>
+      <h4>История</h4>
+      <div class="h on">Чем семафор отличается от мьютекса?</div>
+      <div class="h">Алгоритм банкира — пример</div>
+      <div class="h">Страничная подкачка</div>
+      <div class="h">Требования к отчёту ЛР 3</div>
+    </aside>
+    <main class="col c-main"><div class="main">
+      <h1 class="qq disp">Чем семафор отличается от мьютекса?</h1>
+      <div class="trace"><span>запрос <b>семафор мьютекс различия</b></span><span>найдено <b>40+40</b></span><span>rerank <b>6</b></span><span><b>1,8 с</b></span></div>
+      <div class="claim on"><span class="n">1</span><div><p>Мьютекс — двоичный замок с владельцем: освободить его может только поток, который его захватил. Семафор — счётчик без владельца, P и V вызывает любой процесс.</p><small>Лекция 7 · слайд 12</small></div></div>
+      <div class="claim"><span class="n">2</span><div><p>Семафор ограничивает число одновременных доступов (пул из N буферов), мьютекс — взаимное исключение в критической секции.</p><small>Лекция 7 · слайд 14</small></div></div>
+      <div class="claim"><span class="n">3</span><div><p>Двоичный семафор похож на мьютекс, но не защищает от освобождения «чужим» потоком.</p><small>Методичка ЛР 4 · стр. 9</small></div></div>
+      <div class="fb"><button>👍</button><button>👎</button></div>
+      <div class="ask"><input placeholder="Вопрос по материалам…"><button class="btn">Спросить</button></div>
+    </div></main>
+    <aside class="col c-src">
+      <div class="sh"><div><small>ИСТОЧНИК 1 · ЛЕКЦИЯ · ОС · 5 СЕМ.</small><b>Лекция 7. Синхронизация процессов</b></div><div class="big">12</div></div>
+      <div class="u dim"><small>СЛАЙД 11</small><p>Критическая секция — участок кода, где процесс обращается к общему ресурсу…</p></div>
+      <div class="u"><small>СЛАЙД 12</small><p><mark>Мьютекс имеет владельца: разблокировать его может только захвативший поток.</mark></p><p><mark>Семафор — целочисленный счётчик; P() уменьшает, V() увеличивает,</mark> вызвать их может любой процесс.</p></div>
+      <div class="u dim"><small>СЛАЙД 13</small><p>Пример: производитель — потребитель на двух семафорах и мьютексе…</p></div>
+      <div class="nb"><span>← 11</span><span>весь документ</span><span>13 →</span></div>
+    </aside>
+  </div>
+</section>
+
+<section id="board" class="screen">
+  <div class="hero">
+    <div><small>Разметка · правила v2</small><div class="v">342 <em>/ 568</em></div><div class="meter"><i></i></div></div>
+    <div><small>κ A/B</small><div class="v">0,81</div></div>
+    <div><small>авто·арб·чел</small><div class="v">74<em>·19·7</em></div></div>
+    <div><small>стоимость</small><div class="v">$0,52</div></div>
+  </div>
+  <div class="flow">
+    <div class="node"><small>координатор</small><div class="v">38</div><div class="m">батчей · 16 в очереди</div></div><div class="arr"></div>
+    <div class="pair"><div class="node live"><small>разметчик A</small><div class="v">#23</div><div class="m">deepseek-v3</div></div><div class="node live"><small>разметчик B</small><div class="v">#23</div><div class="m">qwen-2.5-72b</div></div></div><div class="arr"></div>
+    <div class="node"><small>валидатор</small><div class="v">9</div><div class="m">отклонено значений</div></div><div class="arr"></div>
+    <div class="node live"><small>арбитр</small><div class="v">12</div><div class="m">ждут решения</div></div><div class="arr"></div>
+    <div class="node"><small>проверка</small><div class="v">24</div><div class="m">ждут человека</div></div>
+  </div>
+  <div class="split">
+    <div><h4>Журнал</h4><div class="log">
+      <div><span>14:02:31</span><span>A</span><b>батч #23 · 15 док. · 38k ток.</b></div>
+      <div><span>14:02:29</span><span>арбитр</span><span class="w">ЛР 3. Отчёт → Операционные системы (0,78)</span></div>
+      <div><span>14:02:24</span><span>валид.</span><span class="e">семестр 4 ≠ предмет «ОС» (сем. 5) → отклонено</span></div>
+      <div><span>14:02:20</span><span>B</span><span class="k">батч #22 готов · κ 0,84</span></div>
+      <div><span>14:02:11</span><span>коорд.</span><b>батч #14 упал (429) → повтор 2/3</b></div>
+    </div></div>
+    <div><h4>Документов в минуту</h4><div class="spark" id="sp"></div></div>
+  </div>
+</section>
+
+<script>
+const R=document.documentElement,P=new URLSearchParams(location.search);
+R.dataset.screen=P.get('screen')||'chat';R.dataset.tab=P.get('tab')||'answer';if(P.get('theme'))R.dataset.theme=P.get('theme');
+const mark=()=>{document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===R.dataset.screen));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===R.dataset.tab))};
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.go)R.dataset.screen=t.dataset.go;if(t.dataset.tab)R.dataset.tab=t.dataset.tab;if(t.hasAttribute('data-theme-toggle'))R.dataset.theme=(R.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'))==='dark'?'light':'dark';mark()});
+mark();
+document.getElementById('sp').innerHTML=[12,18,22,20,31,35,30,38,36,41,39,44].map(h=>`<i style="height:${h*2}%"></i>`).join('');
+</script>
+</body>
+</html>

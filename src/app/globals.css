@@ -1,64 +1,95 @@
 @import "tailwindcss";
 
-/* «Читальный зал»: бумага, чернила, красный штамп, жёлтый маркер */
+/* Дизайн «Консоль» (вариант A, docs/design.md): нейтральный серый, индиго, плоские карточки */
 :root {
   color-scheme: light;
-  --paper: #f3efe6;
-  --card: #faf8f3;
-  --ink: #1d1b17;
-  --mute: #6f675b;
-  --rule: #dcd4c4;
-  --accent: #b42318;
-  --mark: #f6e05e;
+  --bg: #f7f7f8;
+  --panel: #ffffff;
+  --sub: #f1f1f3;
+  --ink: #18181b;
+  --mute: #71717a;
+  --line: #e4e4e7;
+  --acc: #4f46e5;
+  --acc-soft: #eef2ff;
+  --ok: #16a34a;
+  --warn: #d97706;
+  --bad: #dc2626;
+  --hl: #fef08a;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0b0d;
+  --panel: #131316;
+  --sub: #1b1b1f;
+  --ink: #ececf1;
+  --mute: #8b8b95;
+  --line: #27272c;
+  --acc: #818cf8;
+  --acc-soft: #1e1b4b;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --hl: #5b4d0b;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --paper: #14130f;
-    --card: #1b1a15;
-    --ink: #ebe5d6;
-    --mute: #9d9586;
-    --rule: #36322a;
-    --accent: #f07a6a;
-    --mark: #5c5214;
+    --bg: #0b0b0d;
+    --panel: #131316;
+    --sub: #1b1b1f;
+    --ink: #ececf1;
+    --mute: #8b8b95;
+    --line: #27272c;
+    --acc: #818cf8;
+    --acc-soft: #1e1b4b;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --hl: #5b4d0b;
   }
 }
 
 @theme inline {
-  --color-paper: var(--paper);
-  --color-card: var(--card);
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-sub: var(--sub);
   --color-ink: var(--ink);
   --color-mute: var(--mute);
-  --color-rule: var(--rule);
-  --color-accent: var(--accent);
-  --color-mark: var(--mark);
-  --font-serif: var(--font-literata);
-  --font-sans: var(--font-plex);
-  --font-mono: var(--font-plex-mono);
+  --color-line: var(--line);
+  --color-acc: var(--acc);
+  --color-acc-soft: var(--acc-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --color-hl: var(--hl);
+  /* старые имена прототипа v1 — уйдут вместе с прототипом */
+  --color-paper: var(--bg);
+  --color-card: var(--panel);
+  --color-rule: var(--line);
+  --color-accent: var(--acc);
+  --color-mark: var(--hl);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-inter);
+  --font-mono: var(--font-jb-mono);
 }
 
 body {
-  background: var(--paper);
+  background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-plex), system-ui, sans-serif;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-:target {
-  scroll-margin-top: 7rem;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 ::selection {
-  background: var(--mark);
+  background: var(--hl);
   color: var(--ink);
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
 
@@ -66,10 +97,10 @@ html {
   50% { opacity: 0; }
 }
 
-/* курсор печати при «стриме» ответа */
+/* курсор печати при стриме ответа */
 .caret::after {
   content: "▍";
   margin-left: 2px;
-  color: var(--accent);
+  color: var(--acc);
   animation: blink 1s steps(1) infinite;
 }

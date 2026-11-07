@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вариант B — Конспект</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f3;--panel:#fff;--sub:#eaefe9;--ink:#15211b;--mute:#61706a;--line:#dde4dc;--acc:#0f766e;--acc-soft:#ccfbf1;--ok:#15803d;--warn:#c2410c;--bad:#be123c;--hl:#a7f3d0;--sh:0 1px 2px rgba(16,40,30,.06),0 4px 16px rgba(16,40,30,.06);color-scheme:light}
+:root[data-theme=dark]{--bg:#0e1412;--panel:#151d1a;--sub:#1d2925;--ink:#e6efeb;--mute:#8fa39b;--line:#24322d;--acc:#2dd4bf;--acc-soft:#123a35;--ok:#4ade80;--warn:#fb923c;--bad:#fb7185;--hl:#115e59;--sh:none;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1412;--panel:#151d1a;--sub:#1d2925;--ink:#e6efeb;--mute:#8fa39b;--line:#24322d;--acc:#2dd4bf;--acc-soft:#123a35;--ok:#4ade80;--warn:#fb923c;--bad:#fb7185;--hl:#115e59;--sh:none;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Manrope,system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+header{display:flex;align-items:center;gap:14px;padding:12px 20px;position:sticky;top:0;z-index:5;background:var(--bg)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800}
+.logo i{width:28px;height:28px;border-radius:9px;background:var(--acc);display:grid;place-items:center;color:var(--panel);font-style:normal;font-size:14px}
+.ds{background:var(--panel);border-radius:999px;padding:6px 14px;font-size:13px;box-shadow:var(--sh);color:var(--mute)}
+nav{margin-left:auto;display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:999px;box-shadow:var(--sh)}
+nav button{border:0;background:none;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--mute)}
+nav button.on{background:var(--acc);color:var(--panel)}
+.screen{display:none}
+:root[data-screen=chat] #chat,:root[data-screen=board] #board{display:block}
+.cols{display:grid;grid-template-columns:260px minmax(0,1fr) 420px;gap:16px;padding:4px 20px 20px;height:calc(100vh - 60px)}
+.col{background:var(--panel);border-radius:20px;box-shadow:var(--sh);overflow:auto;padding:20px}
+.col.c-main{background:none;box-shadow:none;padding:8px 8px 0}
+h4{margin:0 0 10px;font-size:13px;font-weight:700}
+.grp{margin-bottom:20px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;background:none}
+.opt.on{background:var(--acc-soft);border-color:transparent;color:var(--acc);font-weight:600}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{padding:8px 10px;border-radius:12px;font-size:13px;color:var(--mute)}
+.hist li.on{background:var(--sub);color:var(--ink);font-weight:600}
+.bubble-q{margin-left:auto;max-width:80%;background:var(--acc);color:var(--panel);border-radius:20px 20px 6px 20px;padding:12px 18px;font-weight:600;width:fit-content}
+.under{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px;margin:8px 0 18px;font-size:12px;color:var(--mute)}
+.under span{background:var(--panel);border-radius:999px;padding:2px 10px;box-shadow:var(--sh)}
+.under span.a{color:var(--acc);font-weight:600}
+.bubble-a{background:var(--panel);border-radius:20px 20px 20px 6px;padding:20px 22px;box-shadow:var(--sh)}
+.bubble-a p{margin:0 0 12px;line-height:1.7}
+.fn{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--acc-soft);color:var(--acc);font-size:11px;font-weight:800;vertical-align:2px;margin-left:2px}
+.fn.on{background:var(--acc);color:var(--panel)}
+.cards{display:flex;gap:8px;overflow-x:auto;margin-top:14px;padding-bottom:4px}
+.sc{flex:none;width:200px;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:12px}
+.sc.on{border-color:var(--acc);background:var(--acc-soft)}
+.sc b{display:block;font-size:13px;margin:2px 0}
+.sc em{font-style:normal;color:var(--mute)}
+.act{display:flex;gap:8px;margin-top:14px;font-size:13px;color:var(--mute);align-items:center}
+.act button{border:0;background:var(--sub);border-radius:999px;padding:4px 12px}
+.ask{position:sticky;bottom:0;padding:16px 0 20px;background:linear-gradient(transparent,var(--bg) 30%)}
+.ask div{display:flex;gap:8px;background:var(--panel);border-radius:999px;padding:6px 6px 6px 20px;box-shadow:var(--sh)}
+.ask input{flex:1;border:0;background:none;color:var(--ink);font:inherit;outline:none}
+.btn{border:0;border-radius:999px;padding:10px 18px;background:var(--acc);color:var(--panel);font-weight:700}
+.vh{font-size:12px;color:var(--mute)}
+.vt{font-size:17px;font-weight:800;margin:4px 0 12px}
+.page{border-radius:14px;padding:14px 16px;margin-bottom:10px;background:var(--sub)}
+.page.dim{opacity:.55}
+.page.cur{background:none;border:2px solid var(--acc)}
+.page small{display:block;font-weight:700;color:var(--mute);font-size:11px;margin-bottom:6px;letter-spacing:.04em}
+.page p{margin:0 0 6px;font-size:14px}
+mark{background:var(--hl);color:inherit;border-radius:4px;padding:0 3px}
+.steps{display:flex;gap:6px}
+.steps span{flex:1;height:4px;border-radius:9px;background:var(--line)}.steps span.on{background:var(--acc)}
+/* board */
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:4px 20px 12px}
+.top h2{margin:0;font-size:22px;font-weight:800}
+.prog{flex:1;min-width:200px;height:12px;border-radius:9px;background:var(--panel);box-shadow:var(--sh);overflow:hidden}
+.prog i{display:block;height:100%;width:60%;background:var(--acc);border-radius:9px}
+.stat{background:var(--panel);border-radius:14px;padding:8px 14px;box-shadow:var(--sh);font-size:12px;color:var(--mute)}
+.stat b{display:block;font-size:17px;color:var(--ink)}
+.kan{display:grid;grid-template-columns:repeat(5,minmax(220px,1fr));gap:12px;padding:0 20px 20px;overflow-x:auto}
+.lane{background:var(--sub);border-radius:18px;padding:12px;min-height:60vh}
+.lane h3{margin:0 0 10px;font-size:13px;display:flex;justify-content:space-between}
+.lane h3 span{background:var(--panel);border-radius:999px;padding:0 8px;font-size:12px}
+.dc{background:var(--panel);border-radius:14px;padding:12px;margin-bottom:8px;box-shadow:var(--sh);font-size:13px}
+.dc b{display:block;margin-bottom:6px}
+.ab{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px;color:var(--mute)}
+.ab .x{color:var(--warn);font-weight:700}
+.conf{height:4px;border-radius:9px;background:var(--sub);margin-top:8px}.conf i{display:block;height:100%;border-radius:9px;background:var(--acc)}
+.who{display:flex;gap:4px;margin-top:8px}.who span{font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;background:var(--acc-soft);color:var(--acc)}
+.who span.r{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.tabs{display:none}
+@media (max-width:767px){
+  header{padding:10px 16px}.ds{display:none}
+  .cols{display:block;height:auto;padding:0 16px 16px}
+  .col{display:none}
+  :root[data-tab=filters] .c-side,:root[data-tab=answer] .c-main,:root[data-tab=source] .c-src{display:block}
+  .tabs{display:flex;gap:4px;margin:0 16px 12px;background:var(--panel);border-radius:999px;padding:4px;box-shadow:var(--sh)}
+  .tabs button{flex:1;border:0;background:none;padding:6px;border-radius:999px;font-size:13px;font-weight:600;color:var(--mute)}
+  .tabs button.on{background:var(--sub);color:var(--ink)}
+  .col.c-main{padding:0}
+  .bubble-q{max-width:92%}
+  .top{padding:4px 16px 12px}
+  .kan{grid-template-columns:1fr;padding:0 16px 16px}
+  .lane{min-height:auto}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><i>S</i>Study RAG</div>
+  <div class="ds">Датасет: Материалы КИ · правила v2</div>
+  <nav><button data-go="chat">Чат</button><button data-go="board">Разметка</button><button data-theme-toggle>◐</button></nav>
+</header>
+
+<section id="chat" class="screen">
+  <div class="tabs"><button data-tab="filters">Фильтры</button><button data-tab="answer">Ответ</button><button data-tab="source">Источник</button></div>
+  <div class="cols">
+    <aside class="col c-side">
+      <div class="grp"><h4>Предмет</h4><div class="opts"><button class="opt on">Операционные системы</button><button class="opt">Архитектура ЭВМ</button><button class="opt">Базы данных</button><button class="opt">+ ещё 21</button></div></div>
+      <div class="grp"><h4>Семестр</h4><div class="opts"><button class="opt">1</button><button class="opt">2</button><button class="opt">3</button><button class="opt">4</button><button class="opt on">5</button></div></div>
+      <div class="grp"><h4>Тип материала</h4><div class="opts"><button class="opt on">лекция</button><button class="opt">методичка</button><button class="opt">задание</button><button class="opt">отчёт</button></div></div>
+      <div class="grp"><h4>Недавние вопросы</h4><ul class="hist"><li class="on">Чем семафор отличается от мьютекса?</li><li>Алгоритм банкира — пример</li><li>Страничная подкачка</li><li>Требования к отчёту ЛР 3</li></ul></div>
+    </aside>
+    <main class="col c-main">
+      <div class="bubble-q">Чем семафор отличается от мьютекса?</div>
+      <div class="under"><span class="a">✦ автофильтр: Операционные системы</span><span class="a">✦ 5 семестр</span><span>лекция</span></div>
+      <div class="bubble-a">
+        <p>Мьютекс — двоичный замок с владельцем: освободить его может только поток, который его захватил<span class="fn on">1</span>. Семафор — счётчик без владельца, операции P и V вызывает любой процесс<span class="fn">1</span>.</p>
+        <p>Семафор ограничивает число одновременных доступов к ресурсу, например пул из N буферов; мьютекс нужен для взаимного исключения в критической секции<span class="fn">2</span>. Двоичный семафор похож на мьютекс, но не мешает «чужому» потоку его освободить<span class="fn">3</span>.</p>
+        <div class="cards">
+          <div class="sc on"><em>1 · слайд 12</em><b>Лекция 7. Синхронизация процессов</b><em>Операционные системы</em></div>
+          <div class="sc"><em>2 · слайд 14</em><b>Лекция 7. Синхронизация процессов</b><em>Операционные системы</em></div>
+          <div class="sc"><em>3 · стр. 9</em><b>Методичка к ЛР 4. Потоки</b><em>Операционные системы</em></div>
+        </div>
+        <div class="act"><button>👍</button><button>👎</button><span>6 фрагментов · 1,8 с</span></div>
+      </div>
+      <div class="ask"><div><input placeholder="Спросите что-нибудь по материалам"><button class="btn">→</button></div></div>
+    </main>
+    <aside class="col c-src">
+      <div class="vh">Источник 1 из 3</div>
+      <div class="vt">Лекция 7. Синхронизация процессов</div>
+      <div class="steps"><span class="on"></span><span></span><span></span></div><br>
+      <div class="page dim"><small>СЛАЙД 11</small><p>Критическая секция — участок кода, где процесс обращается к общему ресурсу…</p></div>
+      <div class="page cur"><small>СЛАЙД 12</small><p><mark>Мьютекс имеет владельца: разблокировать его может только захвативший поток.</mark></p><p><mark>Семафор — целочисленный счётчик; P() уменьшает, V() увеличивает,</mark> вызвать их может любой процесс.</p></div>
+      <div class="page dim"><small>СЛАЙД 13</small><p>Пример: производитель — потребитель на двух семафорах и мьютексе…</p></div>
+    </aside>
+  </div>
+</section>
+
+<section id="board" class="screen">
+  <div class="top"><h2>Разметка</h2><div class="prog"><i></i></div>
+    <div class="stat"><b>342 / 568</b>документов</div><div class="stat"><b>κ 0,81</b>согласие A/B</div><div class="stat"><b>$0,52</b>из ≈ $0,87</div><button class="btn">Пауза</button></div>
+  <div class="kan">
+    <div class="lane"><h3>В очереди <span>186</span></h3>
+      <div class="dc"><b>Конспект лекции 14.03</b><span style="color:var(--mute);font-size:12px">батч #31</span></div>
+      <div class="dc"><b>ЛР 6. Задание</b><span style="color:var(--mute);font-size:12px">батч #31</span></div>
+    </div>
+    <div class="lane"><h3>Размечают <span>40</span></h3>
+      <div class="dc"><b>Лекция 9. Тупики</b><div class="who"><span>A …</span><span>B …</span></div><div class="conf"><i style="width:40%"></i></div></div>
+      <div class="dc"><b>Методичка ЛР 5</b><div class="who"><span>A ✓</span><span>B …</span></div><div class="conf"><i style="width:70%"></i></div></div>
+    </div>
+    <div class="lane"><h3>Согласовано <span>253</span></h3>
+      <div class="dc"><b>Лекция 7. Синхронизация</b><div class="ab"><span>предмет</span><span>Операционные системы</span><span>тип</span><span>лекция · 0,94</span></div></div>
+      <div class="dc"><b>Методичка ЛР 4</b><div class="ab"><span>предмет</span><span>Операционные системы</span><span>тип</span><span>методичка · 0,91</span></div></div>
+    </div>
+    <div class="lane"><h3>У арбитра <span>65</span></h3>
+      <div class="dc"><b>ЛР 3. Отчёт <small style="color:var(--mute)">ПДн скрыты</small></b><div class="ab"><span>A</span><span>Операционные системы</span><span>B</span><span class="x">Архитектура ЭВМ</span></div><div class="who"><span class="r">арбитр …</span></div></div>
+    </div>
+    <div class="lane"><h3>Человеку <span>24</span></h3>
+      <div class="dc"><b>Конспект 12.03</b><div class="ab"><span>A</span><span>семестр 4</span><span>B</span><span class="x">семестр 5</span><span>арб.</span><span>не уверен · 0,52</span></div><button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px">Решить</button></div>
+    </div>
+  </div>
+</section>
+
+<script>
+const R=document.documentElement,P=new URLSearchParams(location.search);
+R.dataset.screen=P.get('screen')||'chat';R.dataset.tab=P.get('tab')||'answer';if(P.get('theme'))R.dataset.theme=P.get('theme');
+const mark=()=>{document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===R.dataset.screen));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===R.dataset.tab))};
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.go)R.dataset.screen=t.dataset.go;if(t.dataset.tab)R.dataset.tab=t.dataset.tab;if(t.hasAttribute('data-theme-toggle'))R.dataset.theme=(R.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'))==='dark'?'light':'dark';mark()});
+mark();
+</script>
+</body>
+</html>
