@@ -1,11 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 /** Клиент от имени пользователя (RLS). В Server Components set cookie не нужен — сессию обновляет proxy. */
 export async function db() {
+  await connection(); // getClaims читает часы (срок JWT) — только во время запроса
   const jar = await cookies();
   return createServerClient(URL, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
