@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 const MIGRATION = readFileSync(join(__dirname, "../migrations/20261107000001_init.sql"), "utf8");
 const LIMITS = readFileSync(join(__dirname, "../migrations/20261108000003_profiles_limits.sql"), "utf8");
+const WORKER = readFileSync(join(__dirname, "../migrations/20261108000006_worker.sql"), "utf8");
 const OWNER = "00000000-0000-0000-0000-00000000000a";
 const OTHER = "00000000-0000-0000-0000-00000000000b";
 const DEMO = "00000000-0000-0000-0000-00000000000d";
@@ -42,11 +43,13 @@ beforeAll(async () => {
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     create role authenticated;
+    create role anon;
     grant usage on schema auth to authenticated;
     grant execute on function auth.uid() to authenticated;
   `);
   await db.exec(MIGRATION);
   await db.exec(LIMITS);
+  await db.exec(WORKER);
   await db.exec(`
     grant usage on schema public to authenticated;
     grant select, insert, update, delete on all tables in schema public to authenticated;
@@ -219,8 +222,38 @@ describe("очередь claim_batches", () => {
     });
   });
 
-  it("D8: обычный пользователь не может вызвать claim_batches", async () => {
+  it("D8: обычный пользователь не может вызвать claim_batches и finish_batch", async () => {
     await expect(as(OWNER, (tx) => tx.query("select * from claim_batches(1)"))).rejects.toThrow(/permission denied/);
+    await expect(as(OWNER, (tx) => tx.query("select finish_batch(1, true)"))).rejects.toThrow(/permission denied/);
+  });
+
+  it("D9: finish_batch — счётчики, повтор до 3 попыток, задание закрывается; отменённое не забирается", async () => {
+    await db.transaction(async (tx) => {
+      const one = async <T,>(sql: string, p: unknown[] = []) => (await tx.query<T>(sql, p)).rows[0];
+      const job = (await one<{ id: string }>("insert into label_jobs (dataset_id, ruleset_id) values ($1,$2) returning id", [dsOwner, rulesOk])).id;
+      await tx.query(`insert into batches (job_id, seq, document_ids) select $1, g, array[$2::uuid] from generate_series(1,2) g`, [job, docOwner]);
+      const [b1, b2] = (await tx.query<{ id: number }>("select * from claim_batches(2)")).rows;
+      expect((await one<{ status: string }>("select status from label_jobs where id = $1", [job])).status).toBe("running");
+
+      expect((await one<{ r: string }>("select finish_batch($1, true, null, 100, 20) r", [b1.id])).r).toBe("ok");
+      expect((await one<{ r: string }>("select finish_batch($1, false, 'boom') r", [b2.id])).r).toBe("ok"); // в очередь снова
+      expect((await one<{ status: string }>("select status from batches where id = $1", [b2.id])).status).toBe("queued");
+      for (let i = 0; i < 2; i++) {
+        expect((await tx.query("select * from claim_batches(5)")).rows).toHaveLength(1);
+        await tx.query("select finish_batch($1, false, 'boom')", [b2.id]);
+      }
+      const b = await one<{ status: string; attempts: number; error: string }>("select status, attempts, error from batches where id = $1", [b2.id]);
+      expect([b.status, b.attempts, b.error]).toEqual(["failed", 3, "boom"]);
+      const j = await one<{ status: string; done_batches: number; tokens_in: string; finished_at: string | null }>("select * from label_jobs where id = $1", [job]);
+      expect([j.status, j.done_batches, Number(j.tokens_in), !!j.finished_at]).toEqual(["done", 1, 100, true]);
+
+      const job2 = (await one<{ id: string }>("insert into label_jobs (dataset_id, ruleset_id) values ($1,$2) returning id", [dsOwner, rulesOk])).id;
+      await tx.query(`insert into batches (job_id, seq, document_ids) values ($1, 1, array[$2::uuid])`, [job2, docOwner]);
+      await tx.query("update label_jobs set status = 'canceled' where id = $1", [job2]);
+      expect((await tx.query("select * from claim_batches(5)")).rows).toHaveLength(0);
+      expect((await one<{ error: string }>("select error from batches where job_id = $1", [job2])).error).toBe("canceled");
+      await tx.rollback();
+    });
   });
 });
 

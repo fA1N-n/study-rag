@@ -8,7 +8,7 @@ import type { FieldDef } from "./LabelEditor";
 type Vote = { agent: string; model: string | null; values: Record<string, unknown>; confidence: number | null; rationale: string | null };
 
 /** Решение человека по документу из очереди: принять итог как есть, взять голос агента или поправить поле. */
-export default function ReviewForm({ docId, nextHref, fields, current, votes, disputed }: { docId: string; nextHref: string | null; fields: FieldDef[]; current: Record<string, unknown>; votes: Vote[]; disputed: string[] }) {
+export default function ReviewForm({ docId, nextHref, fields, current, votes, disputed, readOnly = false }: { docId: string; nextHref: string | null; fields: FieldDef[]; current: Record<string, unknown>; votes: Vote[]; disputed: string[]; readOnly?: boolean }) {
   const router = useRouter();
   const [vals, setVals] = useState(current);
   const [busy, setBusy] = useState(false);
@@ -20,15 +20,17 @@ export default function ReviewForm({ docId, nextHref, fields, current, votes, di
     const r = await fetch(`/api/documents/${docId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ labels: values }) });
     setBusy(false);
     if (!r.ok) return setError((await r.json().catch(() => ({}))).error ?? "Не удалось сохранить");
-    router.push(nextHref ?? "?");
-    router.refresh();
+    // следующий документ — переход (страница динамическая, данные свежие); последний — перечитать очередь
+    if (nextHref) router.push(nextHref);
+    else router.refresh();
   }
 
   // горячие клавиши: Enter — сохранить, 1/2/3 — взять голос A/B/арбитра, → — пропустить
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
-      const v = votes[Number(e.key) - 1];
+      const v = readOnly ? undefined : votes[Number(e.key) - 1];
+      if (e.key === "Enter" && readOnly) return;
       if (v) setVals({ ...vals, ...v.values });
       else if (e.key === "Enter") save();
       else if (e.key === "ArrowRight" && nextHref) router.push(nextHref);
@@ -72,6 +74,12 @@ export default function ReviewForm({ docId, nextHref, fields, current, votes, di
       {votes.filter((v) => v.rationale).map((v, i) => (
         <p key={i} className="text-xs"><b>{v.agent}:</b> <span className="italic text-mute">{v.rationale}</span></p>
       ))}
+      {readOnly ? (
+        <div className="space-y-2">
+          <p className="text-[11px] text-mute">Решение принимает владелец датасета. Подсвечены спорные поля.</p>
+          {nextHref && <button type="button" className={btnGhost} onClick={() => router.push(nextHref)}>Следующий →</button>}
+        </div>
+      ) : (<>
       <div className="space-y-2">
         {fields.map((f) => {
           const id = `rv-${f.key}`;
@@ -102,6 +110,7 @@ export default function ReviewForm({ docId, nextHref, fields, current, votes, di
         {nextHref && <button type="button" className={btnGhost} onClick={() => router.push(nextHref)}>Пропустить →</button>}
       </div>
       <p className="text-[11px] text-mute">Клавиши: 1/2/3 — взять голос агента, Enter — сохранить, → — пропустить.</p>
+      </>)}
     </div>
   );
 }

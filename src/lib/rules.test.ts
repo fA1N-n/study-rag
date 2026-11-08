@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stratify, type SampleDoc } from "./rules";
+import { splitSamples, stratify, type SampleDoc } from "./rules";
 
 const doc = (id: string, top: string, units: number): SampleDoc => ({ id, filename: id, source_path: `C:\\Users\\[пользователь]\\${top}\\${id}.pdf`, units, preview: "" });
 
@@ -24,5 +24,21 @@ describe("stratify", () => {
     expect(stratify([...docs].reverse(), 5)).toEqual(first);
     expect(stratify(docs, 100)).toHaveLength(docs.length);
     expect(stratify([], 5)).toEqual([]);
+  });
+});
+
+describe("splitSamples", () => {
+  it("маленький набор: критику остаются другие документы", () => {
+    const docs = Array.from({ length: 8 }, (_, i) => doc(`d${i}`, "x", 3));
+    const [a, b] = splitSamples(docs);
+    expect(a).toHaveLength(5);
+    expect(b).toHaveLength(3);
+    expect(b.some((d) => a.includes(d))).toBe(false);
+  });
+  it("большой набор — 25 и 15; один документ — критик видит тот же", () => {
+    const docs = Array.from({ length: 100 }, (_, i) => doc(`d${i}`, "x", 3));
+    expect(splitSamples(docs).map((s) => s.length)).toEqual([25, 15]);
+    const [a, b] = splitSamples([doc("one", "x", 1)]);
+    expect(b).toEqual(a);
   });
 });

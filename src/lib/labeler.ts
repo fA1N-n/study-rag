@@ -40,7 +40,7 @@ export async function labelBatch(model: string, rs: Ruleset, docs: BatchDoc[], w
       role: "user",
       content: `${schemaBlock(rs)}\n\nРазметь каждый документ ниже. Ответ: {"labels": [{"doc_id": "...", "values": {<поле>: <значение>}, "confidence": 0..1, "rationale": "1–2 дословные цитаты"}]}. Значения enum — точно из списка; не угадывай необязательные поля.${who === "B" ? " Сначала найди в тексте признаки, потом выбирай значение." : ""}\n\n${ordered.map(docBlock).join("\n\n")}`,
     },
-  ], { json: true, maxTokens: 8000 });
+  ], { json: true, maxTokens: 12000 });
   return { votes: readVotes(r.text, docs, rs.fields), usage: r.usage, model: r.model };
 }
 
@@ -53,7 +53,7 @@ export async function refereeBatch(model: string, rs: Ruleset, items: { doc: Bat
         .map((x) => `${docBlock(x.doc)}\nспорные: ${x.disputed.join(", ")}\nA: ${JSON.stringify(x.a.values)} (${x.a.confidence}) — ${x.a.rationale}\nB: ${JSON.stringify(x.b.values)} (${x.b.confidence}) — ${x.b.rationale}`)
         .join("\n\n")}`,
     },
-  ], { json: true, maxTokens: 6000 });
+  ], { json: true, maxTokens: 10000 });
   return { votes: readVotes(r.text, items.map((x) => x.doc), rs.fields), usage: r.usage, model: r.model };
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseJson } from "./llm";
+import { parseJson, routing } from "./llm";
 
 describe("parseJson", () => {
   it("снимает ```json и текст вокруг", () => {
@@ -14,5 +14,12 @@ describe("parseJson", () => {
   it("нет JSON или оборван → ошибка", () => {
     expect(() => parseJson("нет")).toThrow(/нет JSON/);
     expect(() => parseJson('{"a": [1, 2')).toThrow(/оборван/);
+  });
+});
+
+describe("routing", () => {
+  it("одна модель — model, список через запятую — models (до 3)", () => {
+    expect(routing("a:free")).toEqual({ model: "a:free" });
+    expect(routing("a:free, b:free,c,d")).toEqual({ models: ["a:free", "b:free", "c"] });
   });
 });

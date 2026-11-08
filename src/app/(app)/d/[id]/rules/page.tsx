@@ -37,34 +37,24 @@ async function Rules({ params, searchParams }: { params: Promise<{ id: string }>
           </div>
         </div>
         {mine && <RulesEditor id={rs!.id} fields={rs!.fields} rules={rs!.rules} status={rs!.status} />}
-        <section className="overflow-x-auto rounded-[10px] border border-line bg-panel">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-mute">
-                <th className="px-3 py-2 font-medium">Поле</th>
-                <th className="px-3 py-2 font-medium">Тип</th>
-                <th className="px-3 py-2 font-medium">Значения</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fields.map((f) => (
-                <tr key={f.key} className="border-t border-line align-top">
-                  <td className="px-3 py-2">
-                    <b>{f.label}</b>
-                    <div className="font-mono text-[11px] text-mute">{f.key}{f.required ? " · обязательное" : ""}{f.filter ? " · фильтр" : ""}{f.allowedBy ? ` · зависит от ${f.allowedBy.field}` : ""}</div>
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">{f.type}</td>
-                  <td className="px-3 py-2">
-                    {f.values ? (
-                      <div className="flex max-h-28 flex-wrap gap-1 overflow-auto">
-                        {f.values.map((v) => <span key={v} className="rounded bg-sub px-1.5 py-px text-[11px] text-mute">{v}</span>)}
-                      </div>
-                    ) : <span className="text-mute">—</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <section className="divide-y divide-line rounded-[10px] border border-line bg-panel">
+          <div className="hidden grid-cols-[200px_56px_minmax(0,1fr)] gap-3 px-3 py-2 text-xs text-mute sm:grid">
+            <span>Поле</span><span>Тип</span><span>Значения</span>
+          </div>
+          {fields.map((f) => (
+            <div key={f.key} className="grid gap-x-3 gap-y-1.5 px-3 py-2.5 text-sm sm:grid-cols-[200px_56px_minmax(0,1fr)]">
+              <div>
+                <b>{f.label}</b> <span className="font-mono text-xs text-mute sm:hidden">· {f.type}</span>
+                <div className="font-mono text-[11px] text-mute">{f.key}{f.required ? " · обязательное" : ""}{f.filter ? " · фильтр" : ""}{f.allowedBy ? ` · зависит от ${f.allowedBy.field}` : ""}</div>
+              </div>
+              <span className="hidden font-mono text-xs sm:block">{f.type}</span>
+              {f.values ? (
+                <div className="flex max-h-28 flex-wrap gap-1 overflow-auto">
+                  {f.values.map((v) => <span key={v} className="rounded bg-sub px-1.5 py-px text-[11px] text-mute">{v}</span>)}
+                </div>
+              ) : <span className="hidden text-mute sm:block">—</span>}
+            </div>
+          ))}
         </section>
         <section className={card}>
           <h2 className={h4}>Правила для разметчиков</h2>

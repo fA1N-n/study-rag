@@ -60,7 +60,7 @@ async function Review({ params, searchParams }: { params: Promise<{ id: string }
         </div>
       </section>
       <aside className={card}>
-        {mine && fields.length ? (
+        {fields.length ? (
           <ReviewForm
             key={cur.id}
             docId={cur.id}
@@ -69,9 +69,10 @@ async function Review({ params, searchParams }: { params: Promise<{ id: string }
             current={doc!.labels ?? {}}
             votes={v.map((x) => ({ ...x, agent: x.agent === "referee" ? "арбитр" : x.agent }))}
             disputed={disputed}
+            readOnly={!mine}
           />
         ) : (
-          <p className={muted}>{fields.length ? "Решать может только владелец датасета." : "Нет правил разметки."}</p>
+          <p className={muted}>Нет правил разметки.</p>
         )}
       </aside>
     </div>

@@ -22,6 +22,13 @@ export function stratify(docs: SampleDoc[], n: number, exclude = new Set<string>
   return out;
 }
 
+/** Выборки архитектора (до 25) и критика (до 15, другие документы); маленький набор делится 60/40. */
+export function splitSamples(docs: SampleDoc[]): [SampleDoc[], SampleDoc[]] {
+  const a = stratify(docs, Math.min(25, Math.ceil(docs.length * 0.6)));
+  const b = stratify(docs, 15, new Set(a.map((d) => d.id)));
+  return [a, b.length ? b : a];
+}
+
 const show = (docs: SampleDoc[], chars: number) =>
   docs.map((d, i) => `### Документ ${i + 1}\nимя: ${d.filename}\nпуть: ${d.source_path}\nединиц: ${d.units}\n${d.preview.slice(0, chars)}`).join("\n\n");
 
@@ -32,21 +39,20 @@ const SCHEMA_HELP = `Формат ответа — один JSON-объект:
 Ограничения: 3–8 полей; поля-фильтры — то, по чему студент будет фильтровать поиск (предмет, семестр, тип документа, преподаватель…); у enum — исчерпывающий список значений плюс «другое»; не придумывай поля, которых нельзя определить по началу документа.`;
 
 export async function generateRules(docs: SampleDoc[], model: string, critic: string): Promise<Draft> {
-  const sampleA = stratify(docs, 25);
-  const sampleB = stratify(docs, 15, new Set(sampleA.map((d) => d.id)));
+  const [sampleA, sampleB] = splitSamples(docs);
   const usage: Usage = { tokensIn: 0, tokensOut: 0 };
   const add = (u: Usage) => ((usage.tokensIn += u.tokensIn), (usage.tokensOut += u.tokensOut));
 
   const sys = "Ты — архитектор схемы разметки учебных документов. Отвечай только JSON.";
   const ask = `Ниже ${sampleA.length} документов из набора (начало каждого, ПДн замаскированы). Предложи схему разметки и правила для двух независимых разметчиков-LLM, чтобы они размечали одинаково.\n\n${SCHEMA_HELP}\n\n${show(sampleA, 1500)}`;
-  const first = await chat(model, [{ role: "system", content: sys }, { role: "user", content: ask }], { json: true, maxTokens: 6000 });
+  const first = await chat(model, [{ role: "system", content: sys }, { role: "user", content: ask }], { json: true, maxTokens: 10000 });
   add(first.usage);
   let draft = parseDraft(first.text);
 
   const crit = await chat(critic, [
     { role: "system", content: "Ты — критик правил разметки. Найди, где два добросовестных разметчика разойдутся." },
     { role: "user", content: `Схема и правила:\n${JSON.stringify(draft)}\n\nПримени их строго к ${sampleB.length} документам, которых архитектор не видел. Перечисли нумерованным списком: противоречия в правилах, документы вне значений enum, неоднозначные места; для каждого — точный текст правки. Не больше 12 пунктов.\n\n${show(sampleB, 1200)}` },
-  ], { maxTokens: 3000 });
+  ], { maxTokens: 8000 });
   add(crit.usage);
 
   const fix = await chat(model, [
@@ -54,7 +60,7 @@ export async function generateRules(docs: SampleDoc[], model: string, critic: st
     { role: "user", content: ask },
     { role: "assistant", content: JSON.stringify(draft) },
     { role: "user", content: `Критик проверил правила на других документах:\n${crit.text}\n\nИсправь схему и правила с учётом замечаний (одна итерация). Верни полный JSON в том же формате.` },
-  ], { json: true, maxTokens: 6000 });
+  ], { json: true, maxTokens: 10000 });
   add(fix.usage);
   try {
     draft = parseDraft(fix.text);

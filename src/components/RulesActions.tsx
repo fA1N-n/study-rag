@@ -16,8 +16,7 @@ export function GenerateButton({ datasetId }: { datasetId: string }) {
     setBusy(false);
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return setError(j.error ?? "Не удалось сгенерировать");
-    router.push(`?v=${j.version}`);
-    router.refresh();
+    router.push(`?v=${j.version}`); // новая версия — новый адрес, страница перечитается
   }
   return (
     <div className="space-y-2">
@@ -46,8 +45,10 @@ export function RulesEditor({ id, fields, rules, status }: { id: string; fields:
     const j = await res.json().catch(() => ({}));
     if (!res.ok) return setError(j.error ?? "Не удалось сохранить");
     setOpen(false);
-    router.push(`?v=${j.version}`);
-    router.refresh();
+    // тот же адрес (?v=N) push не перерисует — тогда только refresh
+    const url = `?v=${j.version}`;
+    if (location.search === url) router.refresh();
+    else router.push(url);
   }
 
   function save() {

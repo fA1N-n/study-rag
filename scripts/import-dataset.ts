@@ -1,24 +1,27 @@
 // Импорт материалов КИ в демо-датасет владельца тем же ядром, что и загрузка из UI (src/lib/ingest).
 // Запуск: node --env-file=.env.local --import ./scripts/labeling/ts-resolve.mjs scripts/import-dataset.ts
+// Тестовый датасет демо-пользователя: IMPORT_AS=demo IMPORT_NAME="Тест" IMPORT_PICK=8 (равномерно по списку файлов)
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { ingestFiles } from "../src/lib/ingest/index";
 
-const NAME = "Материалы КИ (5 семестров)";
+const NAME = process.env.IMPORT_NAME ?? "Материалы КИ (5 семестров)";
+const AS_DEMO = process.env.IMPORT_AS === "demo";
+const PICK = Number(process.env.IMPORT_PICK ?? 0);
 const ROOT = "data/raw_2026-11-07/output";
 const env = process.env;
 const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.SUPABASE_SECRET_KEY!, { auth: { persistSession: false } });
 
 const { data: users } = await sb.auth.admin.listUsers({ perPage: 1000 });
-const owner = users.users.find((u) => u.email === env.OWNER_EMAIL);
-if (!owner) throw new Error("нет владельца: запустите scripts/setup-users.ts");
+const owner = users.users.find((u) => u.email === (AS_DEMO ? env.DEMO_EMAIL : env.OWNER_EMAIL));
+if (!owner) throw new Error("нет пользователя: запустите scripts/setup-users.ts");
 
 let { data: ds } = await sb.from("datasets").select("id,stats").eq("owner_id", owner.id).eq("name", NAME).maybeSingle();
 if (!ds) {
   const r = await sb
     .from("datasets")
-    .insert({ owner_id: owner.id, name: NAME, is_demo: true, description: "Лекции, методички, задания и отчёты группы КИ за I–V семестры. ФИО студентов замаскированы." })
+    .insert({ owner_id: owner.id, name: NAME, is_demo: !AS_DEMO, description: AS_DEMO ? `Тестовая выборка ${PICK} документов из материалов КИ` : "Лекции, методички, задания и отчёты группы КИ за I–V семестры. ФИО студентов замаскированы." })
     .select("id,stats")
     .single();
   if (r.error) throw r.error;
@@ -27,7 +30,9 @@ if (!ds) {
 
 const walk = (d: string): string[] =>
   readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : e.name.endsWith(".md") ? [join(d, e.name)] : []));
-const files = walk(ROOT).map((p) => ({ name: relative(ROOT, p).replaceAll("\\", "/"), data: new Uint8Array(readFileSync(p)) }));
+const paths = walk(ROOT).sort();
+const picked = PICK > 0 ? paths.filter((_, i) => i % Math.floor(paths.length / PICK) === 0).slice(0, PICK) : paths;
+const files = picked.map((p) => ({ name: relative(ROOT, p).replaceAll("\\", "/"), data: new Uint8Array(readFileSync(p)) }));
 const keepNames = (JSON.parse(readFileSync("data/labeling/teachers.json", "utf8")).teachers as string[]) ?? [];
 
 const { data: have } = await sb.from("documents").select("sha256").eq("dataset_id", ds.id);
