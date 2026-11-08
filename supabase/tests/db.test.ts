@@ -6,6 +6,7 @@ import { vector } from "@electric-sql/pglite-pgvector";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const MIGRATION = readFileSync(join(__dirname, "../migrations/20261107000001_init.sql"), "utf8");
+const LIMITS = readFileSync(join(__dirname, "../migrations/20261108000003_profiles_limits.sql"), "utf8");
 const OWNER = "00000000-0000-0000-0000-00000000000a";
 const OTHER = "00000000-0000-0000-0000-00000000000b";
 const DEMO = "00000000-0000-0000-0000-00000000000d";
@@ -45,12 +46,13 @@ beforeAll(async () => {
     grant execute on function auth.uid() to authenticated;
   `);
   await db.exec(MIGRATION);
+  await db.exec(LIMITS);
   await db.exec(`
     grant usage on schema public to authenticated;
     grant select, insert, update, delete on all tables in schema public to authenticated;
     grant usage on all sequences in schema public to authenticated;
     insert into auth.users (id) values ('${OWNER}'), ('${OTHER}'), ('${DEMO}');
-    insert into profiles (id, role) values ('${OWNER}', 'owner'), ('${OTHER}', 'owner'), ('${DEMO}', 'demo');
+    update profiles set role = 'owner' where id in ('${OWNER}', '${OTHER}');
   `);
   // фикстуры от имени суперпользователя (как сервисный ключ)
   const q = async (sql: string, p: unknown[] = []) => (await db.query<{ id: string }>(sql, p)).rows[0]?.id;
@@ -280,5 +282,31 @@ describe("вопросы", () => {
       /row-level security/,
     );
     await as(OTHER, (tx) => tx.query("insert into questions (dataset_id, question) values ($1,'x?')", [dsDemo]), true);
+  });
+});
+
+describe("профили и лимиты", () => {
+  it("D13: новый пользователь Auth получает профиль demo", async () => {
+    const id = "00000000-0000-0000-0000-0000000000e1";
+    await db.query("insert into auth.users (id) values ($1)", [id]);
+    const r = await db.query<{ role: string }>("select role from profiles where id = $1", [id]);
+    expect(r.rows[0]?.role).toBe("demo");
+    expect((await db.query<{ role: string }>("select role from profiles where id = $1", [DEMO])).rows[0]?.role).toBe("demo");
+  });
+  it("D14: у демо-пользователя не больше 30 вопросов в сутки; у владельца лимита нет", async () => {
+    const ask = (uid: string) =>
+      as(uid, (tx) => rows(tx, "insert into questions (user_id, dataset_id, question) values ($1, $2, 'вопрос') returning id", [uid, dsDemo]), true);
+    await db.query(
+      "insert into questions (user_id, dataset_id, question) select $1, $2, 'старый' from generate_series(1, 29)",
+      [DEMO, dsDemo],
+    );
+    await expect(ask(DEMO)).resolves.toBeDefined();
+    await db.query("insert into questions (user_id, dataset_id, question) values ($1, $2, 'тридцатый')", [DEMO, dsDemo]);
+    await expect(ask(DEMO)).rejects.toThrow(/30 questions/);
+    await db.query("update questions set created_at = now() - interval '2 days' where user_id = $1", [DEMO]);
+    await expect(ask(DEMO)).resolves.toBeDefined();
+    await db.query("insert into questions (user_id, dataset_id, question) select $1, $2, 'много' from generate_series(1, 40)", [OWNER, dsDemo]);
+    await expect(ask(OWNER)).resolves.toBeDefined();
+    await db.query("delete from questions");
   });
 });

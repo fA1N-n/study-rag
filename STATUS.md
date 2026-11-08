@@ -35,6 +35,8 @@
 - Разметчик B — Codex по `scripts/labeling/labeler-prompt.md` в `data/labeling/B/` (промпт выдан пользователю). Золотой набор — пользователь вручную в `gold_candidates.csv`.
 
 ## Next
+- ПДн: агентам A/B уходили НЕмаскированные `filename` и `source_path` (фамилии студентов в именах файлов, имя владельца в `C:\Users\<имя>\…`). Для офлайн-разметки приемлемо (Codex видел сырые данные при сборе), но перед любыми вызовами API (OpenRouter free, Cloudflare) маскировать и имя файла, и путь — добавить в `pii.ts` через TDD.
+- Ручная проверка: пользователь размечает 20 документов в `data/labeling/gold_human/gold-check.html` (генератор `scripts/labeling/gold-form.ts`) на другом ноутбуке; вернёт файл `gold_human_results.json` → положить в `data/labeling/gold_human/`; это человеческий эталон для оценки A, B, арбитра и серебряного набора.
 0. Арбитр (новый чат Claude Code): `validate.ts B`, mergeLabels по A/B, арбитр по `needs_referee`, каппа по полям, очередь человеку, импорт в БД при ключах. Перенести доп. маскирование ПДн из `prepare.ts` в `pii.ts` через TDD.
 1. Без ключей: ядро загрузки (этап 3) через TDD — zip (fflate, имена CP866 через `TextDecoder('ibm866')`), pdf (unpdf, по страницам), docx (mammoth → разделы), txt/md → единицы, sha256, дедуп, маскирование в `preview`.
 2. С ключами: этап 2 — репо на GitHub, `supabase db push`, Vault-секреты, вход + демо-вход (`proxy`), Vercel, CI зелёный.
