@@ -10,10 +10,20 @@ export const metadata: Metadata = {
   description: "Разметка учебных документов агентами и RAG по ним",
 };
 
+// выбранная тема ставится до первой отрисовки, без вспышки
+const THEME = `try{var t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru" className={`${inter.variable} ${mono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="ru" suppressHydrationWarning className={`${inter.variable} ${mono.variable} h-full antialiased`}>
+      <head>
+        <script
+          type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: THEME }}
+        />
+      </head>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

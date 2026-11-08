@@ -4,7 +4,7 @@
 // Ответы автосохраняются в localStorage браузера; кнопка «Скачать результат» отдаёт gold_human_results.json.
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { OUT } from "./common.ts";
+import { OUT } from "./common";
 
 const PICK: Record<string, number> = { "покрытие subject": 8, "низкая уверенность": 5, "добор по уверенности": 5, "покрытие doc_type": 2 };
 

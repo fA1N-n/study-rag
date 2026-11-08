@@ -1,10 +1,10 @@
 import Nav from "@/components/Nav";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <Nav />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+      <div className="flex w-full flex-1 flex-col">{children}</div>
     </>
   );
 }
