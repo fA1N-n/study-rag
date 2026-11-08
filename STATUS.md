@@ -13,56 +13,59 @@
 - Команды для пользователя — Windows PowerShell 5.1.
 - **Золотой набор размечает не человек (решение пользователя 2026-11-08, нет времени):** «серебряный набор» — 80 документов из `gold_candidates.csv` размечает Opus по ПОЛНОМУ тексту (не preview), независимо от A/B и арбитра, по правилам v1; в отчёте честно называть «серебряным» и указать ограничение. Желательно: пользователь проверяет 20 случайных из 80 одним кликом в очереди проверки (~15 мин) — оценка ошибки самого набора.
 - **Денег не тратим (решение пользователя 2026-11-07).** Только бесплатные тарифы: Supabase Free, Vercel Hobby, GitHub; LLM — бесплатные модели OpenRouter (`:free`, 50 запросов/день; DeepSeek/Qwen бесплатных нет, есть `google/gemma-4-31b-it:free`); эмбеддинги — Cloudflare Workers AI `@cf/baai/bge-m3` (1024 измерения = `halfvec(1024)`, бесплатно 10 000 neurons/день ≈ 9 млн токенов; Google нельзя — решение пользователя; запасной вариант — локальная модель через transformers.js, новый пакет); rerank — тем же бесплатным LLM; основной датасет размечаем агентами в Claude Code (A, арбитр) и Codex (B) по правилам приложения и импортируем в БД.
-- Режим работы: «делай по плану до конца», останавливаться только на выборе дизайна (сделан), новых пакетах, отсутствии ключей. На этапе отчёта спросить состав команды для титульника.
+- Режим работы: «делай по плану до конца», останавливаться только на новых npm-пакетах (пачкой), отсутствии ключей и на этапе отчёта (состав команды). Каждый этап: проверка в браузере (десктоп, 375 px, тёмная), коммит, docs/ai-log.md, docs/requirements.md, STATUS.md. На этапе отчёта спросить состав команды для титульника.
 
 ## Key decisions
 - Стек: Next.js 16.4.5 + Supabase (Postgres, pgvector halfvec, FTS russian, Auth, Storage, pg_cron + pg_net) + Vercel + GitHub Actions + OpenRouter (fetch, без SDK). Dockerfile, `output: "standalone"`.
-- Дизайн — вариант A «Консоль» (выбран по критерию «проще и быстрее»): `docs/design.md`, токены в `src/app/globals.css` (старые имена прототипа — алиасы, уйдут вместе с прототипом).
-- Ключевые поля разметки = `required` или `filter`; enum без учёта регистра → каноническое значение; ПДн: регулярки + `keepNames` (преподаватели из схемы) по формам фамилии, не по префиксу.
-- БД: RLS через `can_read_dataset`/`can_write_dataset` (security definer); лимит демо 30 документов — триггер; разметка только по утверждённым правилам — триггер; одна активная разметка — частичный unique-индекс; `claim_batches` только для сервисного ключа.
-- Next.js 16: перед кодом читать `node_modules/next/dist/docs/`; `middleware` → `proxy`; `cacheComponents: true` → `params` только с `generateStaticParams` или под `<Suspense>`; динамический GET-хендлер — `await connection()`.
+- Дизайн — вариант A «Консоль»: `docs/design.md`, классы в `src/components/ui.ts`. Прототип v1 на моках удалён (есть в истории git, коммит c8ae775).
+- Ключевые поля разметки = `required` или `filter`; enum без учёта регистра → каноническое значение; ПДн: регулярки + `keepNames` (преподаватели из схемы).
+- БД: RLS через `can_read_dataset`/`can_write_dataset`; лимиты демо триггерами (30 документов с `pg_advisory_xact_lock`, 30 вопросов/сутки); разметка только по утверждённым правилам; одна активная разметка; `claim_batches` только для сервисного ключа; Storage: владелец — своя папка, чужой демо-датасет — только `docs/`.
+- Next.js 16: перед кодом читать `node_modules/next/dist/docs/`; `proxy.ts` вместо middleware; `cacheComponents: true` → страницы читают `params`/`searchParams` внутри `<Suspense>`; клиент Supabase на сервере вызывает `await connection()` (иначе «Date.now() while prerendering»).
+- Загрузка синхронная в одном запросе (`maxDuration 300`, без очереди): наш архив разбирается за ~2 с. Документ хранится уже замаскированным (текст, подписи, имя файла, путь) — RAG и демо не видят ПДн. Флаг ПДн домашняя папка сборщика не ставит.
+- Статус датасета `rules` = правила утверждены.
+- Разметка в приложении: один запрос LLM на батч для A и для B, арбитр — один запрос на спорные документы батча (лимит бесплатных моделей 50 запросов/день).
 
 ## Done
-- 2026-10-11 … 2026-11-07: scaffold, прототип v1 на моках, план v2, spec v2.0, данные распакованы.
-- 2026-11-07 этап 1 (коммит 15a11f1): три HTML-мока `docs/design/variant-{a,b,c}.html`, 18 скриншотов `docs/screenshots/design/`, выбран A, токены, `docs/design.md`.
-- 2026-11-07 ядро разметки (fc8dcd8): `src/lib/labeling/` — units, batching, schema (zod), merge A/B/арбитр, kappa, pii; критерии `docs/labeling-core.md`; TDD с двумя критиками (Opus). 99 тестов. На реальных данных: 572 документа, 5 787 единиц (совпало с frontmatter у всех), ПДн в 349 документах, 0,5 с.
-- 2026-11-07 заготовки этапа 2 без ключей (0fa3884): миграции `supabase/migrations/` (схема v2, RLS, `match_chunks` RRF, `neighbor_chunks`, `claim_batches`; Storage + pg_cron отдельным файлом), 21 SQL/RLS-тест в PGlite (мутационная проверка: ломаются нужные), `/api/health`, `.github/workflows/ci.yml`, `Dockerfile`, `.env.example` под v2, Next 16.4.5 (уязвимость 16.4.0).
-- Всего тестов: 120, lint/tsc/build чистые.
-- 2026-11-07 офлайн-разметка A (скрипты `scripts/labeling/`, данные `data/labeling/` вне git): 29 батчей; правила v1 (выборка 30 → критик Opus на 20, 16 замечаний приняты; `ruleset_v1.json`, status draft — утверждение пользователем задним числом); разметчик A (субагенты Sonnet) 572/572, 0 ошибок валидатора, ср. уверенность 0,856, < 0,7 — 87 (15,2 %); `labels_A.jsonl`, `summary_A.md`, `gold_candidates.csv` (80), `progress.md`.
+- 2026-10-11 … 2026-11-07: scaffold, прототип v1, план v2, spec v2.0, этап 1 (дизайн A), ядро разметки (99 тестов), заготовки этапа 2, офлайн-разметка A — см. `docs/ai-log.md`.
+- 2026-11-08 разметчик B (другая сессия, 29382a1): 572/572; 001–018 Codex, 019–029 Claude Haiku (`data/labeling/B/models.json`).
+- 2026-11-08 этап 2 (bc224da): публичный репо https://github.com/fA1N-n/study-rag (история без данных и секретов), Supabase `iekwfiiptbyujzsfhynr` (eu-west-3) — 5 миграций, Vault `worker_secret` (`worker_url` — после Vercel), пользователи demo и owner (`scripts/setup-users.ts`), вход + демо-вход (`src/proxy.ts`, `/api/auth/demo`), CRUD датасетов, CI зелёный (`next typegen` перед tsc). Проверено в браузере: редирект, неверный пароль, демо-вход, API 401, CRUD, 375 px тёмная.
+- 2026-11-08 этап 3 (02bad95): ядро загрузки `src/lib/ingest/` через tdd-critic (22 критерия `docs/ingest-core.md`, критик тестов + финальный критик на 572 реальных документах, 16 дефектов исправлены); маршрут `/api/datasets/[id]/ingest`; экраны: вкладки датасета, обзор, загрузка, документы (фильтры, пагинация), документ (единицы, правка меток человеком, удаление). Наш датасет «Материалы КИ (5 семестров)» (is_demo) загружен `scripts/import-dataset.ts`: 572 документа, 5 787 единиц, ПДн у 410. Проверено в браузере: обзор, список, документ под демо (375 px, тёмная), загрузка через UI (2 новых + дубль), маскирование имени файла.
+- 2026-11-08 арбитр (de01f8e): `scripts/labeling/merge.ts` (prep/final), арбитр — 5 субагентов Opus по `scripts/labeling/referee-prompt.md` на 69 спорных; итог `data/labeling/final_v1.jsonl`, `merge_v1.md`, `kappa_v1.md`, `review_queue.csv`. Каппа A/B (все / Codex / Haiku): предмет 0,959 / 0,941 / 0,990; семестр 0,934 / 0,905 / 0,982; преподаватель 0,962 / 0,945 / 0,989; тип 0,907 / 0,872 / 0,968; ПДн 0,965 / 0,946 / 1,000. Итог: agreed 434 (75,9 %), refereed 39 (6,8 %), review 99 (17,3 %). Импорт в БД (`scripts/import-labels.ts`): правила v1 (draft, active), все голоса A/B/арбитра в `labels`, итог в `documents`, сводка в `datasets.stats.labeling`, статус датасета `labeled`.
+- 2026-11-08 заготовки этапов 4–5 (de01f8e, НЕ проверены в браузере): `src/lib/llm.ts` (OpenRouter, `parseJson`), `src/lib/rules.ts` (архитектор → критик → правка, стратифицированная выборка), API `/api/datasets/[id]/rulesets` (GET, POST — генерация), `/api/rulesets/[id]` (PATCH: правка черновика, правка утверждённой → новая версия, утверждение), экран `/d/[id]/rules`; экран `/d/[id]/review` (голоса A/B/арбитра, клавиши 1/2/3/Enter/→); `src/lib/labeler.ts` (`runBatch`: A и B параллельно → merge → арбитр по спорным), тесты на подставной LLM.
+- Ручная проверка пользователя: `data/labeling/gold_human/gold_human_results.json` — 19 документов (из 20 в форме один не размечен). Сырое совпадение с итогом без нормализации написания (UNCONFIRMED до этапа 7): предмет 15/19, семестр 16/19, преподаватель 15/19, тип 16/19, ПДн 12/19.
+- Тестов: 204 (17 файлов), lint/tsc чистые.
 
 ## Now
-- Ждём ключи от пользователя (этап 2): Supabase, OpenRouter, `gh auth login`, `npx supabase login`, Vercel, `.env.local`. Без них этапы 2–8 не проверить.
-- Разметчик B ГОТОВ (2026-11-08): 572/572, 29 батчей, все проходят `validate.ts B`. Батчи 001–018 (359 док.) — Codex (GPT), упёрся в лимит; 019–029 (213 док.) — Claude Haiku субагентами по тому же `labeler-prompt.md` (у Haiku 1 батч пропустил документ → дописан). Атрибуция — `data/labeling/B/models.json`. Средняя уверенность: Codex 0,954 (9 ниже 0,7 — похоже на завышение), Haiku 0,841 (32 ниже 0,7). Каппу A/B в отчёте считать отдельно: главная — по 001–018 (Sonnet против GPT), Haiku-часть — отдельной строкой (обе модели Claude, согласие может быть завышено). Субагенты Haiku читали `ruleset_v1.json` и превью частями из-за лимита Read — превью могли видеть не целиком (у A, вероятно, так же).
+- Остановлено по просьбе пользователя (контекст чата большой) — продолжать в новом чате.
 
 ## Next
-- ПДн: агентам A/B уходили НЕмаскированные `filename` и `source_path` (фамилии студентов в именах файлов, имя владельца в `C:\Users\<имя>\…`). Для офлайн-разметки приемлемо (Codex видел сырые данные при сборе), но перед любыми вызовами API (OpenRouter free, Cloudflare) маскировать и имя файла, и путь — добавить в `pii.ts` через TDD.
-- Ручная проверка: пользователь размечает 20 документов в `data/labeling/gold_human/gold-check.html` (генератор `scripts/labeling/gold-form.ts`) на другом ноутбуке; вернёт файл `gold_human_results.json` → положить в `data/labeling/gold_human/`; это человеческий эталон для оценки A, B, арбитра и серебряного набора.
-0. Арбитр (новый чат Claude Code): `validate.ts B`, mergeLabels по A/B, арбитр по `needs_referee`, каппа по полям, очередь человеку, импорт в БД при ключах. Перенести доп. маскирование ПДн из `prepare.ts` в `pii.ts` через TDD.
-1. Без ключей: ядро загрузки (этап 3) через TDD — zip (fflate, имена CP866 через `TextDecoder('ibm866')`), pdf (unpdf, по страницам), docx (mammoth → разделы), txt/md → единицы, sha256, дедуп, маскирование в `preview`.
-2. С ключами: этап 2 — репо на GitHub, `supabase db push`, Vault-секреты, вход + демо-вход (`proxy`), Vercel, CI зелёный.
-3. Этапы 3–8 по `docs/plan.md`; экраны — по `docs/design.md` (вариант A), проверка в браузере: десктоп, 375 px, тёмная тема.
+1. Проверить в браузере экраны «Правила» и «Проверка» (десктоп, 375 px, тёмная). Сгенерировать черновик правил на маленьком датасете через бесплатную модель (OpenRouter-ключ рабочий, проверен пользователем) — UNCONFIRMED, что gemma держит JSON-ответ на 25 документах.
+2. Этап 5 до конца: `POST /api/datasets/[id]/jobs` (задание + батчи через `makeBatches`, только утверждённые правила), `/api/worker/tick` (Bearer `WORKER_SECRET`, `claim_batches`, `runBatch`, запись `labels` и `documents`, счётчики, повтор до 3 раз), запуск тика через `after()`, доска `/d/[id]/labeling` (KPI, сетка батчей, дорожки агентов, последние решения; для офлайн-разметки — из `labels` и `stats.labeling`), отмена.
+3. Этап 6: чанки (единица, длинная — частями ~2000/200, `header` из меток), эмбеддинги Cloudflare `@cf/baai/bge-m3`, гибридный поиск `match_chunks`, rerank бесплатным LLM, переписывание + автофильтры, соседи ±1, отказ, сноски, стрим SSE, история, 👍/👎.
+4. Этап 7: серебряный набор (Opus по полному тексту, 80 из `gold_candidates.csv`), оценка A/B/арбитра против серебряного и против 19 ручных (нормализовать написание ФИО), «один разметчик vs двое + арбитр», eval поиска (hit@5, MRR, отказы, без меток / с метками) → `docs/eval.md`; smoke-тесты.
+5. Этап 8: README, ARCHITECTURE.md, отчёт .docx (спросить состав команды для титульника), презентация, сценарий демо.
+- Vercel: пользователь подключает по инструкции из чата; затем `vault.create_secret('<прод>/api/worker/tick', 'worker_url')` и проверка прода.
+- Утверждение правил v1 — пользователь в UI (кнопка «Утвердить версию» на `/d/<id>/rules`).
 
-## Files (этот чат)
-- Новые: `docs/design.md`, `docs/design/*`, `docs/screenshots/design/*`, `docs/labeling-core.md`, `src/lib/labeling/*`, `supabase/migrations/*`, `supabase/tests/db.test.ts`, `src/app/api/health/route.ts`, `.github/workflows/ci.yml`, `Dockerfile`, `.dockerignore`.
-- Изменены: `src/app/globals.css`, `src/app/layout.tsx`, `next.config.ts`, `package.json`, `.env.example`, `docs/ai-log.md`, `docs/requirements.md`.
-- Разметка: новые `scripts/labeling/*` (ts-resolve.mjs, common, prepare, sample, build-ruleset, validate, finalize, labeler-prompt.md, README.md); изменены `docs/ai-log.md`, `docs/requirements.md`, `STATUS.md`.
-- Вне репо: `C:\Dmitry\.claude\launch.json` — конфиги `study-rag` (start), `study-rag-dev`, `design-mocks` (python http.server на 8765).
+## Files (чат 2026-11-08, этапы 2–арбитр)
+- Новые: `src/proxy.ts`, `src/lib/{api,schemas,pipeline,data,llm,rules,labeler}.ts`, `src/lib/supabase/{server,client}.ts`, `src/lib/ingest/*`, `src/lib/labeling/pii.extra.test.ts`, `src/components/{DatasetDialog,DeleteButton,LogoutButton,ThemeToggle,DatasetTabs,Uploader,LabelEditor,RulesActions,ReviewForm}.tsx`, `src/app/(app)/{page,history/page}.tsx`, `src/app/(app)/d/[id]/{layout,page,upload,docs,docs/[docId],rules,review}`, `src/app/api/{auth/demo,auth/logout,datasets,datasets/[id],datasets/[id]/ingest,datasets/[id]/rulesets,documents/[id],rulesets/[id]}`, миграции 3–5, `scripts/{setup-users,import-dataset,import-labels}.ts`, `scripts/labeling/{merge.ts,referee-prompt.md}`, `docs/ingest-core.md`.
+- Изменены: `src/lib/labeling/pii.ts` (доп. маскирование из `prepare.ts`, `maskFilename`, `maskPath`), `src/components/{ui,Nav}.tsx`, `src/app/{layout,login/page}.tsx`, `.github/workflows/ci.yml`, `supabase/tests/db.test.ts`, `docs/{ai-log,requirements}.md`.
+- Удалены: прототип v1 (`src/lib/mock.ts`, `library`, `upload`, `AnswerView`).
+- Данные (вне git): `data/labeling/{kappa_v1.md,merge_v1.md,final_v1.jsonl,review_queue.csv,referee/}`, `data/labeling/gold_human/gold_human_results.json`.
 
 ## Deviations from plan
-- Критерии TDD не согласовывались отдельно (пользователь: «без промежуточных согласований») — записаны в `docs/labeling-core.md`.
-- Миграция написана до SQL-тестов (не чистый TDD); компенсировано мутационной проверкой.
-- Пакет `@electric-sql/pglite-pgvector` добавлен вторым вопросом (в PGlite 0.5 pgvector вынесен отдельно).
-- Разметка: правила v1 сразу с правками критика (одна итерация, версия осталась 1); «Английский язык» слит с «Иностранный язык (английский)»; добавлены типы «статья», «организационное»; teacher выводится из карты по предмету (allowedBy). Разметчики 008/009 запускали Python (запись/проверка JSON) вопреки промпту; один раз было 5 параллельных агентов вместо 4.
-
-## Tried / didn't work (разметка)
-- maskPii пропускает ФИО с отчеством, КАПС, паспорт, `<br>` — доп. эвристика в `prepare.ts`; фамилии студентов в именах файлов не маскируются (UNCONFIRMED, сколько таких).
-- 104 имени файлов `����` не восстановить; CP866-как-CP437 чинится `fixMojibake` в `scripts/labeling/common.ts`.
-- `rm -rf` в Bash запрещён автоматикой — `prepare.ts` сам чистит `inputs/`.
+- Загрузка без очереди воркера (синхронно в запросе) — проще и укладывается в лимит; очередь — если загрузки вырастут.
+- Наш датасет загружен скриптом через то же ядро, а не через UI: выбрать 572 файла во встроенном браузере нельзя; загрузка через UI проверена на малом наборе.
+- Правила v1 и метки импортированы до утверждения правил человеком (офлайн-разметка); утверждение — задним числом в UI.
+- Арбитр стоял на стороне A в 102 из 116 спорных полей (A — Sonnet, арбитр — Opus, обе модели Claude): возможное смещение «своей» модели — в отчёт как ограничение.
+- В примерах `ruleset_v1.json` документ 5e2d9122 (LECTURES_SUMMARY.md) с `has_pii=false` противоречит правилу «имя студента в имени архива → true» (заметил арбитр батча 002) — поправить в правилах v2.
+- Критерии TDD ядра загрузки не согласовывались отдельно (режим «без промежуточных согласований») — в `docs/ingest-core.md`.
 
 ## Tried / didn't work
-- Headless Edge: в песочнице не запускается; в bash-цикле `\\$v` в пути давал файлы `design$v-…png` — использовать `docs/design/shot.sh` (по кадру, вне песочницы).
-- Локальные `file://` во встроенном браузере — только статичный снимок; моки отдавать через `design-mocks`.
-- Python на Windows пишет CRLF в текстовом режиме — `io.open(..., newline='')`.
-- Убивать все `node`-процессы для остановки сервера — запрещено автоматикой; использовать preview_start/stop.
-- `docker build` — UNCONFIRMED (Docker не установлен). CI — UNCONFIRMED (не запускался).
-- `next/link` на `#якорь` не прокручивает → `<a>`; стрелка в `useEffect` с неявным возвратом → краш в проде.
+- `.env.local` дважды перезаписан шаблоном (17:53 и 18:24, вероятно повторный `Copy-Item .env.example`): ключи Supabase восстанавливаются `npx supabase projects api-keys --project-ref iekwfiiptbyujzsfhynr --reveal --output json` (заменять только строки-плейсхолдеры), пароль демо — `scripts/setup-users.ts`, секрет воркера — новый + `vault.update_secret`. Проверка без вывода значений — запрос к `documents`, вход демо, сравнение секрета в SQL.
+- `NEXT_PUBLIC_SUPABASE_URL` с хвостом `/rest/v1/` ломает Auth («Invalid path»).
+- Heredoc с кириллицей и кавычками в Bash иногда не разбирается («unexpected EOF») — писать скрипты через Write в файл; в Python-заменах обратные слэши путей Windows ломают строки — править через Edit.
+- Таблица CP437 в `scripts/labeling/common.ts`: последний символ (неразрывный пробел) сохранён как обычный пробел → пробел мог превращаться в 0xFF; в ядре исправлено, в офлайн-скрипте нет (UNCONFIRMED, затронуло ли имена у разметчиков).
+- 104 имени файлов `����` не восстановить. `rm -rf` в Bash запрещён — удалять через `node -e "fs.rmSync(...)"`.
+- Headless Edge в песочнице не запускается — `docs/design/shot.sh`. Убивать все `node` запрещено — preview_start/stop. `docker build` — UNCONFIRMED (Docker не установлен).
+- Файлы в браузерной панели не выбрать диалогом — для проверки загрузки подкладывать `File` в `input[type=file]` через `DataTransfer` и событие `change`.
