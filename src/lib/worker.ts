@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { runBatch, type AgentVote, type BatchDoc } from "./labeler";
 import { cohenKappa } from "./labeling/kappa";
 import { parseFields, type Field } from "./labeling/schema";
+import { indexDataset } from "./rag/indexer";
 import { admin } from "./supabase/server";
 
 type Batch = { id: number; job_id: string; document_ids: string[] };
@@ -103,6 +104,12 @@ export async function tick({ budgetMs = 150_000, parallel = 2 } = {}) {
     if (!data?.length) break;
     await Promise.all((data as Batch[]).map((b) => processBatch(sb, b)));
     processed += data.length;
+  }
+  // разметки нет — индексация датасетов в статусе indexing (по одному, в оставшееся время)
+  const { data: idx } = await sb.from("datasets").select("id").eq("status", "indexing").limit(3);
+  for (const d of idx ?? []) {
+    const left = budgetMs - (Date.now() - t0);
+    if (left > 10_000) await indexDataset(sb, d.id, left);
   }
   return { processed };
 }

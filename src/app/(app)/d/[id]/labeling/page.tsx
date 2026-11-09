@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { AutoRefresh, CancelJob, StartJob } from "@/components/LabelingActions";
+import { AutoRefresh, CancelJob, StartIndex, StartJob } from "@/components/LabelingActions";
 import { card, h4, muted, pill, skeleton } from "@/components/ui";
 import { loadDataset } from "@/lib/data";
 
@@ -43,7 +43,7 @@ async function Board({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <>
-      {(active || ds.status === "labeling") && <AutoRefresh />}
+      {(active || ds.status === "labeling" || ds.status === "indexing") && <AutoRefresh />}
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Разметка</h1>
@@ -54,6 +54,16 @@ async function Board({ params }: { params: Promise<{ id: string }> }) {
         </div>
         {mine && (active ? <CancelJob jobId={job!.id} /> : approved ? <StartJob datasetId={id} hasLabeled={labeled > 0} /> : <Link className="text-sm text-acc" href={`/d/${id}/rules`}>Сначала утвердите правила →</Link>)}
       </div>
+
+      <section className={`${card} mb-4 flex flex-wrap items-center justify-between gap-3`}>
+        <div className="text-sm">
+          <b>Индекс для чата:</b>{" "}
+          {ds.status === "indexing" ? <span className="text-acc">идёт индексация…</span> : ds.status === "ready" ? `готов · ${ds.stats.chunks ?? 0} чанков` : "не построен"}
+          <div className="text-xs text-mute">Чанк — страница/слайд (длинная — частями по ~2000 символов), заголовок из меток, эмбеддинги bge-m3 (Cloudflare).</div>
+        </div>
+        {mine && !active && ds.status !== "indexing" && labeled === list.length && list.length > 0 && <StartIndex datasetId={id} again={ds.status === "ready"} />}
+        {ds.status === "ready" && <Link href={`/d/${id}/chat`} className="text-sm text-acc">В чат →</Link>}
+      </section>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[

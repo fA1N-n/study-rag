@@ -23,3 +23,14 @@ describe("routing", () => {
     expect(routing("a:free, b:free,c,d")).toEqual({ models: ["a:free", "b:free", "c"] });
   });
 });
+
+describe("steps", () => {
+  it("модели OpenRouter — одним шагом, @cf/ — каждая отдельно после них", async () => {
+    const { steps } = await import("./llm");
+    expect(steps("a:free, @cf/q, b:free")).toEqual([
+      { provider: "openrouter", model: "a:free,b:free" },
+      { provider: "cloudflare", model: "@cf/q" },
+    ]);
+    expect(steps("@cf/q")).toEqual([{ provider: "cloudflare", model: "@cf/q" }]);
+  });
+});

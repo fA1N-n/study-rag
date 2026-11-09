@@ -60,3 +60,15 @@ export function CancelJob({ jobId }: { jobId: string }) {
     </div>
   );
 }
+
+export function StartIndex({ datasetId, again }: { datasetId: string; again: boolean }) {
+  const { busy, error, run } = useAction();
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button type="button" className={again ? btnGhost : btn} disabled={busy} onClick={() => run(`/api/datasets/${datasetId}/index`)}>
+        {busy ? "Запускаем…" : again ? "Переиндексировать" : "Индексировать"}
+      </button>
+      {error && <p role="alert" className={err}>{error}</p>}
+    </div>
+  );
+}

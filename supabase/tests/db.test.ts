@@ -8,6 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 const MIGRATION = readFileSync(join(__dirname, "../migrations/20261107000001_init.sql"), "utf8");
 const LIMITS = readFileSync(join(__dirname, "../migrations/20261108000003_profiles_limits.sql"), "utf8");
 const WORKER = readFileSync(join(__dirname, "../migrations/20261108000006_worker.sql"), "utf8");
+const INDEX = readFileSync(join(__dirname, "../migrations/20261108000007_index.sql"), "utf8");
 const OWNER = "00000000-0000-0000-0000-00000000000a";
 const OTHER = "00000000-0000-0000-0000-00000000000b";
 const DEMO = "00000000-0000-0000-0000-00000000000d";
@@ -50,6 +51,7 @@ beforeAll(async () => {
   await db.exec(MIGRATION);
   await db.exec(LIMITS);
   await db.exec(WORKER);
+  await db.exec(INDEX);
   await db.exec(`
     grant usage on schema public to authenticated;
     grant select, insert, update, delete on all tables in schema public to authenticated;
@@ -254,6 +256,23 @@ describe("очередь claim_batches", () => {
       expect((await one<{ error: string }>("select error from batches where job_id = $1", [job2])).error).toBe("canceled");
       await tx.rollback();
     });
+  });
+});
+
+describe("индексация claim_index", () => {
+  it("D10: два забора не пересекаются, проиндексированные не берутся, пользователю нельзя", async () => {
+    await db.transaction(async (tx) => {
+      const ids = (await tx.query<{ id: string }>(`insert into documents (dataset_id, filename, storage_path, sha256) select $1, 'f'||g, 'p'||g, md5(g::text)||md5(g::text) from generate_series(1,3) g returning id`, [dsOwner])).rows;
+      await tx.query("update documents set indexed_at = now() where dataset_id = $1 and id <> all($2::uuid[])", [dsOwner, ids.map((r) => r.id)]);
+      const a = (await tx.query<{ id: string }>("select id from claim_index($1, 2)", [dsOwner])).rows;
+      const b = (await tx.query<{ id: string }>("select id from claim_index($1, 2)", [dsOwner])).rows;
+      expect(a).toHaveLength(2);
+      expect(b).toHaveLength(1);
+      expect(new Set([...a, ...b].map((r) => r.id))).toEqual(new Set(ids.map((r) => r.id)));
+      expect((await tx.query("select id from claim_index($1, 5)", [dsOwner])).rows).toHaveLength(0);
+      await tx.rollback();
+    });
+    await expect(as(OWNER, (tx) => tx.query("select * from claim_index($1, 1)", [dsOwner]))).rejects.toThrow(/permission denied/);
   });
 });
 
