@@ -24,6 +24,10 @@
 - Загрузка синхронная в одном запросе (`maxDuration 300`, без очереди): наш архив разбирается за ~2 с. Документ хранится уже замаскированным (текст, подписи, имя файла, путь) — RAG и демо не видят ПДн. Флаг ПДн домашняя папка сборщика не ставит.
 - Статус датасета `rules` = правила утверждены.
 - Разметка в приложении: один запрос LLM на батч для A и для B, арбитр — один запрос на спорные документы батча (лимит бесплатных моделей 50 запросов/день).
+- LLM: `chat()`/`chatStream()` идут цепочкой — бесплатные модели OpenRouter одним запросом (`models`, список через запятую в `*_MODEL`), при отказе — Cloudflare `@cf/qwen/qwen3.8-27b`; тайм-аут на шаг (`timeoutMs`), `reasoning: low`, пустой ответ — ошибка. Модели: `LABELER_A/B`, `REFEREE`, `ARCHITECT`, `FAST_MODEL` (переписывание, rerank), `ASK_MODEL` (ответ).
+- Rerank — LLM 0–10 по 20 кандидатам, порог 4 → отказ; `@cf/baai/bge-reranker-base` на русском не годится (проверено).
+- Очередь: `claim_batches` (аренда 10 мин) → `processBatch` → `finish_batch` (миграция 6); индексация — `claim_index` (аренда 5 мин, миграция 7); тик — `/api/worker/tick` (ответ сразу, работа в `after()`), cron срабатывает при батчах в очереди или датасете в статусе `indexing` (миграция 8).
+- Чанк: `unit_no` — порядковый номер единицы (номера страниц повторяются), соседи ±1 по нему.
 
 ## Done
 - 2026-10-11 … 2026-11-07: scaffold, прототип v1, план v2, spec v2.0, этап 1 (дизайн A), ядро разметки (99 тестов), заготовки этапа 2, офлайн-разметка A — см. `docs/ai-log.md`.
@@ -35,23 +39,28 @@
 - Ручная проверка пользователя: `data/labeling/gold_human/gold_human_results.json` — 19 документов (из 20 в форме один не размечен). Сырое совпадение с итогом без нормализации написания (UNCONFIRMED до этапа 7): предмет 15/19, семестр 16/19, преподаватель 15/19, тип 16/19, ПДн 12/19.
 - 2026-11-08 этапы 4–5 в приложении (проверено в браузере: десктоп, 375 px, тёмная): генерация правил бесплатной моделью на тестовом датасете демо «Тест: 8 документов КИ» и утверждение в UI; миграция 6 (`finish_batch`, новый `claim_batches`, применена в Supabase); `src/lib/worker.ts`, `/api/datasets/[id]/jobs`, `/api/jobs/[id]`, `/api/jobs/[id]/cancel`, `/api/worker/tick`, запуск через `after()`; доска `/d/[id]/labeling`; прогон 8 документов (1 батч, 192 с, agreed 1 / refereed 6 / review 1), решение человека в очереди, отмена. Запасные модели через запятую в `*_MODEL` (OpenRouter `models`).
 - Тестов: 214 (19 файлов), lint/tsc чистые.
+- 2026-11-08/09 этап 6 (71f49a4): чанки + bge-m3 + `claim_index`, `/api/ask` (SSE), чат `/d/[id]/chat` (фильтры из схемы, автофильтры-чипы, сноски, панель источника с подсветкой, 👍/👎), `/history`, кнопка «Индексировать». Индекс основного датасета — 11 082 чанка, тестового — 59. Проверено в браузере на тестовом датасете: два ответа со сносками, rerank 10/10 и 7/10, источник, 👍 в истории.
+- 2026-11-09 этап 7 (3726adb): серебряный набор 80/80 (8 агентов Opus, полный замаскированный текст) → `docs/eval.md`: против серебряного A 83,8 %, B 67,5 %, итог 83,8 % документов верно по всем полям; agreed 92,7 %, review 68,8 %; против 19 ручных все 32–37 % (ПДн). Smoke 3/3 на `next build && next start`. README v2, `ARCHITECTURE.md`, скриншоты `docs/screenshots/v2/`.
+- Тестов: 227 (21 файл) + smoke 3; lint/tsc чистые; `next build` проходит.
+- Коммиты не запушены (последний пуш — 91aaefc).
 
 ## Now
-- Этап 6 (RAG).
+- Остановлено на этапе 8 до ответа пользователя: состав команды для титульника отчёта.
 
 ## Next
-1–2. Сделано (этапы 4–5, см. Done).
-3. Этап 6: чанки (единица, длинная — частями ~2000/200, `header` из меток), эмбеддинги Cloudflare `@cf/baai/bge-m3`, гибридный поиск `match_chunks`, rerank бесплатным LLM, переписывание + автофильтры, соседи ±1, отказ, сноски, стрим SSE, история, 👍/👎.
-4. Этап 7: серебряный набор (Opus по полному тексту, 80 из `gold_candidates.csv`), оценка A/B/арбитра против серебряного и против 19 ручных (нормализовать написание ФИО), «один разметчик vs двое + арбитр», eval поиска (hit@5, MRR, отказы, без меток / с метками) → `docs/eval.md`; smoke-тесты.
-5. Этап 8: README, ARCHITECTURE.md, отчёт .docx (спросить состав команды для титульника), презентация, сценарий демо.
-- Vercel: пользователь подключает по инструкции из чата; затем `vault.create_secret('<прод>/api/worker/tick', 'worker_url')` и проверка прода.
-- Утверждение правил v1 — пользователь в UI (кнопка «Утвердить версию» на `/d/<id>/rules`).
+1. Оценка поиска: `node --env-file=.env.local --import ./scripts/labeling/ts-resolve.mjs scripts/eval/search-eval.ts --rerank 20` после сброса дневного бюджета Cloudflare (кэш — `data/eval/cache.json`); результат из `data/eval/search.md` — в `docs/eval.md` §2 и `docs/requirements.md`. Цель hit@5 ≥ 0,8; если ниже — разобрать промахи (`data/eval/search_rows.json`). Бюджет: ~54 эмбеддинга + 28 rerank.
+2. Этап 8: отчёт .docx в формате КАИ (образец — FlowDesk/SkillPath, пути в `docs/plan.md`; пакет `docx` стоит), презентация (`pptxgenjs`), сценарий демо на 5 минут. Состав команды — спросить пользователя (если ответ уже есть в чате — взять).
+3. `git push` (с согласия пользователя) → CI; Vercel: пользователь подключает, присылает адрес → `select vault.create_secret('<прод>/api/worker/tick', 'worker_url')` → smoke по проду (`SMOKE_URL=<прод> npx vitest run smoke`) и проверка в браузере; ссылка в README.
+4. Утверждение правил v1 основного датасета — пользователь в UI (`/d/<id>/rules`, «Утвердить версию»); после — «Индекс для чата» не нужен заново (метки не менялись).
+5. Желательно: настоящие вопросы от людей (15–20) для eval; правила v2 (ПДн, семестр — по расхождениям с ручной проверкой); 99 документов в очереди проверки.
 
 ## Files (чат 2026-11-08, этапы 2–арбитр)
-- Новые: `src/proxy.ts`, `src/lib/{api,schemas,pipeline,data,llm,rules,labeler}.ts`, `src/lib/supabase/{server,client}.ts`, `src/lib/ingest/*`, `src/lib/labeling/pii.extra.test.ts`, `src/components/{DatasetDialog,DeleteButton,LogoutButton,ThemeToggle,DatasetTabs,Uploader,LabelEditor,RulesActions,ReviewForm}.tsx`, `src/app/(app)/{page,history/page}.tsx`, `src/app/(app)/d/[id]/{layout,page,upload,docs,docs/[docId],rules,review}`, `src/app/api/{auth/demo,auth/logout,datasets,datasets/[id],datasets/[id]/ingest,datasets/[id]/rulesets,documents/[id],rulesets/[id]}`, миграции 3–5, `scripts/{setup-users,import-dataset,import-labels}.ts`, `scripts/labeling/{merge.ts,referee-prompt.md}`, `docs/ingest-core.md`.
-- Изменены: `src/lib/labeling/pii.ts` (доп. маскирование из `prepare.ts`, `maskFilename`, `maskPath`), `src/components/{ui,Nav}.tsx`, `src/app/{layout,login/page}.tsx`, `.github/workflows/ci.yml`, `supabase/tests/db.test.ts`, `docs/{ai-log,requirements}.md`.
-- Удалены: прототип v1 (`src/lib/mock.ts`, `library`, `upload`, `AnswerView`).
-- Данные (вне git): `data/labeling/{kappa_v1.md,merge_v1.md,final_v1.jsonl,review_queue.csv,referee/}`, `data/labeling/gold_human/gold_human_results.json`.
+- Этапы 2–арбитр: см. git log до 91aaefc.
+- Этапы 4–5 (f6d9515): миграция 6, `src/lib/worker.ts`, `src/app/api/{datasets/[id]/jobs,jobs/[id],jobs/[id]/cancel,worker/tick}`, `src/app/(app)/d/[id]/labeling`, `src/components/LabelingActions.tsx`; правки `llm.ts`, `rules.ts`, `labeler.ts`, `RulesActions.tsx`, `ReviewForm.tsx`, review и rules pages, `scripts/import-dataset.ts`, `.env.example`.
+- Этап 6 (71f49a4): миграции 7–8, `src/lib/rag/{chunk,embed,indexer,ask}.ts`, `src/app/api/{ask,questions,questions/[id],documents/[id]/units,datasets/[id]/index}`, `src/app/(app)/d/[id]/chat`, `src/components/Chat.tsx`, `src/app/(app)/history/page.tsx`, `scripts/index-dataset.ts`.
+- Этап 7 (3726adb): `scripts/labeling/silver-{prep.ts,prompt.md}`, `scripts/eval/{labeling-eval,search-eval}.ts`, `src/lib/labeling/accuracy.ts`, `smoke/smoke.test.ts`, `docs/eval.md`, `README.md`, `ARCHITECTURE.md`, `docs/screenshots/v2/`.
+- `.env.local`: изменены только строки `*_MODEL`, добавлены `FAST_MODEL`, `ASK_MODEL`.
+- Данные (вне git): `data/labeling/silver/{in,out}/`, `data/eval/{labeling.md,cache.json}`; в БД — тестовый датасет демо «Тест: 8 документов КИ» (правила v1 агента, утверждены; 2 вопроса в истории демо).
 
 ## Deviations from plan
 - Загрузка без очереди воркера (синхронно в запросе) — проще и укладывается в лимит; очередь — если загрузки вырастут.
@@ -60,6 +69,10 @@
 - Арбитр стоял на стороне A в 102 из 116 спорных полей (A — Sonnet, арбитр — Opus, обе модели Claude): возможное смещение «своей» модели — в отчёт как ограничение.
 - В примерах `ruleset_v1.json` документ 5e2d9122 (LECTURES_SUMMARY.md) с `has_pii=false` противоречит правилу «имя студента в имени архива → true» (заметил арбитр батча 002) — поправить в правилах v2.
 - Критерии TDD ядра загрузки не согласовывались отдельно (режим «без промежуточных согласований») — в `docs/ingest-core.md`.
+- Rerank — не отдельная модель, а бесплатный LLM (reranker Cloudflare плох на русском).
+- «RAG без меток» в eval = без фильтров по меткам; заголовок чанка с метками есть в обоих режимах (второй индекс без заголовков не строили — лимит эмбеддингов).
+- Серебряный набор сделан 8 агентами Opus по полному тексту (не человеком, решение пользователя 2026-11-08); с ручной проверкой он сходится на 37 % по документу целиком.
+- Основной датасет проиндексирован скриптом, а не кнопкой (572 документа дольше лимита функции); кнопка проверена на тестовом.
 
 ## Tried / didn't work
 - `.env.local` дважды перезаписан шаблоном (17:53 и 18:24, вероятно повторный `Copy-Item .env.example`): ключи Supabase восстанавливаются `npx supabase projects api-keys --project-ref iekwfiiptbyujzsfhynr --reveal --output json` (заменять только строки-плейсхолдеры), пароль демо — `scripts/setup-users.ts`, секрет воркера — новый + `vault.update_secret`. Проверка без вывода значений — запрос к `documents`, вход демо, сравнение секрета в SQL.
@@ -69,3 +82,11 @@
 - 104 имени файлов `����` не восстановить. `rm -rf` в Bash запрещён — удалять через `node -e "fs.rmSync(...)"`.
 - Headless Edge в песочнице не запускается — `docs/design/shot.sh`. Убивать все `node` запрещено — preview_start/stop. `docker build` — UNCONFIRMED (Docker не установлен).
 - Файлы в браузерной панели не выбрать диалогом — для проверки загрузки подкладывать `File` в `input[type=file]` через `DataTransfer` и событие `change`.
+- Gemma `:free` часто 429 «rate-limited upstream» (общий пул) → запасные модели. Nemotron Ultra (рассуждающая) медленная и может вернуть пустой `content` → `reasoning: low`, пустой ответ — ошибка.
+- `@cf/deepseek-ai/deepseek-v4-flash` недоступна на бесплатном плане Workers; `@cf/baai/bge-reranker-base` на русском ставит правильный фрагмент последним.
+- Индексация 11 тыс. чанков съела ≈8 тыс. нейронов Cloudflare (оценка была 4 тыс.) → в тот же день чат и eval остались без эмбеддингов. Переиндексировать большой датасет — только в день без других задач.
+- Tailwind в `next dev` (Turbopack) не видит классы новых файлов до перезапуска dev-сервера.
+- Процесс, запущенный через `&` в Bash, умирает с оболочкой — долгие скрипты только `run_in_background`.
+- `node --import` (strip-only) не понимает parameter properties (`constructor(readonly x)`).
+- `supabase db push` на прод в агентском режиме требует `--remote --yes`.
+- Скриншоты во встроенном браузере ночью могут не дорисовываться (окно скрыто) — снимать днём.
