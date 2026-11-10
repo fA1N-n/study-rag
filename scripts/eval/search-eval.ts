@@ -126,7 +126,8 @@ const F = metrics(rows.map((r) => r.filtered));
 const withR = rows.filter((r) => r.reranked !== undefined);
 const RR = withR.length ? metrics(withR.map((r) => r.reranked!)) : null;
 const RF = withR.length ? metrics(withR.map((r) => r.filtered)) : null;
-const falseRef = withR.filter((r) => r.reranked === null).length;
+const falseRef = withR.filter((r) => (cache.rerank[r.id] ?? []).length === 0).length; // отказ = пустая выдача после rerank
+const lost = withR.filter((r) => r.reranked === null).length;
 const pct = (x: number) => `${(x * 100).toFixed(1).replace(".", ",")} %`;
 const md = `## Качество поиска
 
@@ -140,7 +141,7 @@ const md = `## Качество поиска
 ${RR && RF ? `| Подвыборка: с метками, без rerank | ${RF.n} | ${pct(RF.hit5)} | ${RF.mrr.toFixed(3)} |
 | Подвыборка: с метками + rerank LLM (порог 4/10) | ${RR.n} | ${pct(RR.hit5)} | ${RR.mrr.toFixed(3)} |
 ` : ""}
-${refusals.length ? `Отказы: на ${refusals.length} вопросах «нет ответа» отказ в ${refusals.filter((r) => r.refused).length}; ложные отказы на отвечаемой подвыборке — ${falseRef} из ${withR.length}.\n` : ""}
+${refusals.length ? `Отказы: на ${refusals.length} вопросах «нет ответа» отказ в ${refusals.filter((r) => r.refused).length}; ложные отказы на отвечаемой подвыборке — ${falseRef} из ${withR.length}; ожидаемый документ выпал из выдачи после rerank — ${lost} из ${withR.length}.\n` : ""}
 Заголовок чанка (метки) входит в эмбеддинг и FTS в обоих режимах — «без меток» здесь значит «без фильтров по меткам»; отдельный индекс без заголовков не строили (лимит бесплатных эмбеддингов).
 `;
 mkdirSync("data/eval", { recursive: true });
