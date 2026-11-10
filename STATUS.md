@@ -42,22 +42,23 @@
 - 2026-11-08/09 этап 6 (71f49a4): чанки + bge-m3 + `claim_index`, `/api/ask` (SSE), чат `/d/[id]/chat` (фильтры из схемы, автофильтры-чипы, сноски, панель источника с подсветкой, 👍/👎), `/history`, кнопка «Индексировать». Индекс основного датасета — 11 082 чанка, тестового — 59. Проверено в браузере на тестовом датасете: два ответа со сносками, rerank 10/10 и 7/10, источник, 👍 в истории.
 - 2026-11-09 этап 7 (3726adb): серебряный набор 80/80 (8 агентов Opus, полный замаскированный текст) → `docs/eval.md`: против серебряного A 83,8 %, B 67,5 %, итог 83,8 % документов верно по всем полям; agreed 92,7 %, review 68,8 %; против 19 ручных все 32–37 % (ПДн). Smoke 3/3 на `next build && next start`. README v2, `ARCHITECTURE.md`, скриншоты `docs/screenshots/v2/`.
 - Тестов: 227 (21 файл) + smoke 3; lint/tsc чистые; `next build` проходит.
-- Коммиты не запушены (последний пуш — 91aaefc).
+- 2026-11-10 этап 8 (план: этап 8): отчёт `docs/report/Проект_Никулин_Тугулева_StudyRAG.docx` (41 с., 15 таблиц, 17 рисунков), презентация `docs/report/Study_RAG_защита.pptx` (10 слайдов), сценарий `docs/report/demo-script.md`; сборщики в `scripts/report/`; скриншоты прода в `docs/screenshots/v2/`, схемы в `docs/screenshots/report/`. Этапы 0–7 отмечены в `docs/plan.md`.
 
 ## Now
-- 2026-11-10: прод https://study-rag-livid.vercel.app работает (smoke 3/3, чат отвечает со сносками, тик воркера 202, `worker_url` в Vault), правила v1 утверждены, всё запушено (7dc8cb4). Оценка поиска готова.
+- Этап 8 (`docs/plan.md`, этап 8): отчёт, презентация, демо готовы; ждёт одобрения пользователя на независимую проверку (субагент fable) и исправление найденного.
 
 ## Next
-1. Оценка поиска сделана 2026-11-10 (`docs/eval.md` §2): hit@5 83,0 % с фильтром, 73,6 % без; rerank −10 п. п. (подвыборка 20), отказы 6/8, ложные 2/20. Можно попробовать порог rerank 3/10 — по желанию.
-2. Этап 8: отчёт .docx в формате КАИ (образцы FlowDesk/SkillPath — пути в `docs/plan.md`; пакет `docx` стоит). Титульник: Никулин Дмитрий Эдуардович и Тугулева Ксения Сергеевна, группа 4307; руководитель — Мокшин Владимир Васильевич. Затем презентация (`pptxgenjs`) и сценарий демо на 5 минут.
-3. В отчёт: Text-to-UI — ветка `v0/chat-and-labeling-board` (сравнить с нашими экранами, не сливать); анализ конкурентов (NotebookLM, ChatGPT Projects) пользователь делать не будет — написать по открытым данным, честно пометив, что без собственного прогона.
-4. Пользователь отказался (нет времени): настоящие вопросы от людей, очередь проверки (99 документов), ручной анализ конкурентов — в отчёте как ограничения.
+1. Этап 8 — независимая проверка отчёта и презентации субагентом (fable) против `docs/eval.md`, STATUS, `docs/requirements.md`; исправить найденное, пересобрать (`node scripts/report/build-report.mjs`, `powershell -File scripts\report\word-update.ps1 <docx>`, `node scripts/report/build-deck.cjs`).
+2. Решение пользователя: тайм-аут поиска в чате основного датасета на проде (см. Tried) — гипотеза RLS на каждую строку; возможное исправление — `match_chunks` как `security definer` с одной проверкой `can_read_dataset(p_dataset)` (миграция 9, `db push` на прод).
+3. Титульник: Никулин Д.Э., Тугулева К.С. (4307), руководитель Мокшин В.В. Анализ конкурентов, настоящие вопросы, очередь проверки (99) — пользователь отказался, в отчёте как ограничения.
+4. По желанию: порог rerank 3/10.
 
 ## Files (чат 2026-11-08, этапы 2–арбитр)
 - Этапы 2–арбитр: см. git log до 91aaefc.
 - Этапы 4–5 (f6d9515): миграция 6, `src/lib/worker.ts`, `src/app/api/{datasets/[id]/jobs,jobs/[id],jobs/[id]/cancel,worker/tick}`, `src/app/(app)/d/[id]/labeling`, `src/components/LabelingActions.tsx`; правки `llm.ts`, `rules.ts`, `labeler.ts`, `RulesActions.tsx`, `ReviewForm.tsx`, review и rules pages, `scripts/import-dataset.ts`, `.env.example`.
 - Этап 6 (71f49a4): миграции 7–8, `src/lib/rag/{chunk,embed,indexer,ask}.ts`, `src/app/api/{ask,questions,questions/[id],documents/[id]/units,datasets/[id]/index}`, `src/app/(app)/d/[id]/chat`, `src/components/Chat.tsx`, `src/app/(app)/history/page.tsx`, `scripts/index-dataset.ts`.
 - Этап 7 (3726adb): `scripts/labeling/silver-{prep.ts,prompt.md}`, `scripts/eval/{labeling-eval,search-eval}.ts`, `src/lib/labeling/accuracy.ts`, `smoke/smoke.test.ts`, `docs/eval.md`, `README.md`, `ARCHITECTURE.md`, `docs/screenshots/v2/`.
+- Этап 8: `scripts/report/{shots.mjs,diagrams.html,diagrams.mjs,lib.mjs,build-report.mjs,build-deck.cjs,word-update.ps1,ppt-pdf.ps1}`, `docs/report/` (docx, pdf, pptx, pdf, demo-script.md), `docs/screenshots/v2/` (пересняты на проде 1280×800, новые: datasets, docs, document, rules, upload, chat-source, chat-mobile-dark, overview-mobile-dark), `docs/screenshots/report/`; правки `docs/plan.md`, `docs/requirements.md`, `docs/ai-log.md`.
 - `.env.local`: изменены только строки `*_MODEL`, добавлены `FAST_MODEL`, `ASK_MODEL`.
 - Данные (вне git): `data/labeling/silver/{in,out}/`, `data/eval/{labeling.md,cache.json}`; в БД — тестовый датасет демо «Тест: 8 документов КИ» (правила v1 агента, утверждены; 2 вопроса в истории демо).
 
@@ -74,6 +75,8 @@
 - Основной датасет проиндексирован скриптом, а не кнопкой (572 документа дольше лимита функции); кнопка проверена на тестовом.
 
 ## Tried / didn't work
+- 2026-11-10: чат основного датасета (11 082 чанка) на проде без фильтров — «canceling statement due to statement timeout»; утром тот же вопрос прошёл за 98 с. `match_chunks` без RLS (postgres, `--read-only` explain) — 0,7 с. Под `authenticated` не проверено: `supabase db query --read-only` не пускает `SET ROLE`, без `--read-only` нужен `--yes` (запись в прод). UNCONFIRMED.
+- `scripts/report/*`: pdftoppm не открывает пути с кириллицей — копировать PDF во временный ASCII-путь; `apply_theme.js` навыка pptx не видит pptxgenjs проекта; `validate.py` навыка требует pip `defusedxml` (не стоит) — проверка pptx открытием в PowerPoint.
 - `.env.local` дважды перезаписан шаблоном (17:53 и 18:24, вероятно повторный `Copy-Item .env.example`): ключи Supabase восстанавливаются `npx supabase projects api-keys --project-ref iekwfiiptbyujzsfhynr --reveal --output json` (заменять только строки-плейсхолдеры), пароль демо — `scripts/setup-users.ts`, секрет воркера — новый + `vault.update_secret`. Проверка без вывода значений — запрос к `documents`, вход демо, сравнение секрета в SQL.
 - `NEXT_PUBLIC_SUPABASE_URL` с хвостом `/rest/v1/` ломает Auth («Invalid path»).
 - Heredoc с кириллицей и кавычками в Bash иногда не разбирается («unexpected EOF») — писать скрипты через Write в файл; в Python-заменах обратные слэши путей Windows ломают строки — править через Edit.

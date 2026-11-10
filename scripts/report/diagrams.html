@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<style>
+  body { margin: 0; font: 15px/1.35 "Segoe UI", Arial, sans-serif; color: #111; background: #fff; }
+  .fig { width: 1100px; padding: 24px; box-sizing: border-box; }
+  .row { display: flex; gap: 14px; align-items: stretch; }
+  .box { border: 1.5px solid #333; border-radius: 6px; padding: 10px 12px; background: #fafafa; flex: 1; }
+  .box b { display: block; margin-bottom: 4px; }
+  .box small { color: #444; font-size: 13px; }
+  .ext { background: #eef2ff; border-color: #4f46e5; }
+  .db { background: #f0fdf4; border-color: #15803d; }
+  .arrow { text-align: center; font-size: 13px; color: #333; padding: 6px 0; }
+  .col { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .step { display: flex; align-items: center; gap: 8px; }
+  .step .box { flex: none; width: 190px; min-height: 92px; }
+  .harr { font-size: 22px; color: #333; }
+  h3 { margin: 0 0 10px; font-size: 14px; color: #555; font-weight: 600; }
+</style></head><body>
+
+<div class="fig" id="arch">
+  <div class="row">
+    <div class="box" style="flex:.7"><b>Браузер</b><small>React-экраны Next.js; файлы датасета — сразу в Storage под сессией пользователя (своя папка, RLS Storage)</small></div>
+  </div>
+  <div class="arrow">HTTPS · сессия Supabase в cookie</div>
+  <div class="row">
+    <div class="box"><b>Vercel: Next.js 16</b><small>proxy.ts (вход, 401/редирект) · Server Components (чтение под RLS) · 18 Route Handlers: датасеты, загрузка, правила, задания, /api/ask (SSE), /api/worker/tick</small></div>
+  </div>
+  <div class="arrow">supabase-js (ключ пользователя / сервисный ключ воркера) · fetch к моделям</div>
+  <div class="row">
+    <div class="box db"><b>Supabase Postgres</b><small>9 таблиц, RLS, триггеры лимитов, pgvector halfvec(1024), FTS russian, RPC очереди и поиска</small></div>
+    <div class="box db"><b>Supabase Auth + Storage</b><small>пользователи owner и demo; исходные файлы и замаскированный текст</small></div>
+    <div class="box db"><b>pg_cron + pg_net</b><small>раз в минуту POST /api/worker/tick с секретом из Vault</small></div>
+  </div>
+  <div class="arrow">внешние API (бесплатные тарифы)</div>
+  <div class="row">
+    <div class="box ext"><b>OpenRouter :free</b><small>архитектор, критик, разметчики A/B, арбитр, переписывание, rerank, ответ; запасные модели в одном запросе</small></div>
+    <div class="box ext"><b>Cloudflare Workers AI</b><small>эмбеддинги bge-m3 (1024); запасная LLM qwen3.8-27b</small></div>
+    <div class="box ext"><b>GitHub Actions</b><small>lint, tsc, 227 тестов, build; автодеплой Vercel из main</small></div>
+  </div>
+</div>
+
+<div class="fig" id="pipe">
+  <h3>Разметка</h3>
+  <div class="step">
+    <div class="box"><b>1. Загрузка</b><small>zip/md/txt/pdf/docx → единицы «страница/слайд/раздел», sha256, маскирование ПДн</small></div><span class="harr">→</span>
+    <div class="box ext"><b>2. Правила</b><small>архитектор (выборка) → критик (другая выборка) → правка</small></div><span class="harr">→</span>
+    <div class="box"><b>3. Человек</b><small>правит схему и правила, утверждает версию</small></div><span class="harr">→</span>
+    <div class="box ext"><b>4. Батчи</b><small>разметчики A и B → валидатор (zod) → арбитр по спорным</small></div>
+  </div>
+  <div class="arrow" style="text-align:right;padding-right:250px">↓ низкая уверенность или спор без решения</div>
+  <div class="step">
+    <div class="box" style="visibility:hidden"></div><span class="harr" style="visibility:hidden">→</span>
+    <div class="box" style="visibility:hidden"></div><span class="harr" style="visibility:hidden">→</span>
+    <div class="box" style="visibility:hidden"></div><span class="harr" style="visibility:hidden">→</span>
+    <div class="box"><b>5. Очередь проверки</b><small>человек решает одним кликом; итог — метки документа</small></div>
+  </div>
+  <h3 style="margin-top:16px">Поиск и ответ</h3>
+  <div class="step">
+    <div class="box"><b>6. Индекс</b><small>чанк = единица (~2000 симв.), заголовок из меток, эмбеддинг bge-m3, tsvector</small></div><span class="harr">→</span>
+    <div class="box ext"><b>7. Запрос</b><small>переписывание + автофильтры из словаря схемы</small></div><span class="harr">→</span>
+    <div class="box db"><b>8. Гибрид</b><small>вектор top-40 + FTS top-40 → RRF → 30</small></div><span class="harr">→</span>
+    <div class="box ext"><b>9. Rerank и ответ</b><small>LLM 0–10 по 20, порог 4 → отказ; соседи ±1; ответ стримом со сносками [n]</small></div>
+  </div>
+</div>
+</body></html>
