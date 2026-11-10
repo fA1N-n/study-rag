@@ -37,8 +37,8 @@
 - [x] Дедуп документов (sha256) — `ingestFiles` + unique (dataset_id, sha256); повторная загрузка → «дубль»
 
 ## Инфраструктура
-- [ ] Деплой онлайн (Vercel), ссылка в README
-- [ ] CI/CD: GitHub Actions (lint, typecheck, тесты, build) — зелёный (https://github.com/fA1N-n/study-rag/actions); автодеплой Vercel — ждёт подключения пользователем
+- [x] Деплой онлайн (Vercel) — https://study-rag-livid.vercel.app, ссылка в README; smoke 3/3 по проду, тик воркера из pg_cron (`worker_url` в Vault) отвечает 202
+- [x] CI/CD: GitHub Actions (lint, typecheck, тесты, build) — зелёный; автодеплой Vercel из `main`
 - [ ] Dockerfile (сборка и запуск локально) — написан, standalone-сборка и `/api/health` проверены; `docker build` UNCONFIRMED (Docker не установлен)
 - [x] Тесты (Vitest) — 227 (21 файл): unit (загрузка, разметка, правила, воркер, чанки, поиск, точность) + 25 SQL/RLS в PGlite (`supabase/tests/db.test.ts`); smoke 3 (`smoke/smoke.test.ts`, зелёные на продовой сборке)
 - [ ] Git с понятной историей коммитов
@@ -54,6 +54,6 @@
 - [ ] Сценарий демо на 5 минут
 
 ## Делает пользователь сам (напоминать)
-- [ ] Text-to-UI (v0 / Lovable) — прогнать экраны, скриншоты в docs/
+- [x] Text-to-UI — v0 по текстовому описанию чата и доски разметки: ветка `v0/chat-and-labeling-board` (2026-11-10, не сливалась)
 - [ ] Анализ конкурентов: NotebookLM, ChatGPT Projects
 - [ ] Утверждение темы у преподавателя

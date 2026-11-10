@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const URL = process.env.SMOKE_URL?.replace(/\/$/, "");
 const get = (path: string, init?: RequestInit) => fetch(`${URL}${path}`, { redirect: "manual", ...init });
 
-describe.skipIf(!URL)(`smoke ${URL}`, () => {
+describe.skipIf(!URL)(`smoke ${URL}`, { timeout: 30_000 }, () => {
   it("health → 200", async () => {
     const r = await get("/api/health");
     expect(r.status).toBe(200);

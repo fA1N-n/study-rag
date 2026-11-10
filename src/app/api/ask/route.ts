@@ -5,7 +5,7 @@ import { chatStream } from "@/lib/llm";
 import { answerMessages, buildContext, citedNumbers, cleanFilters, isRefusal, pickTop, REFUSAL, rerank, retrieve, rewrite, type Filters, type Hit, type Source } from "@/lib/rag/ask";
 import { embed } from "@/lib/rag/embed";
 
-export const maxDuration = 120;
+export const maxDuration = 300; // бесплатные модели отвечают до 1,5–2 мин
 
 const Ask = z.object({
   dataset_id: z.uuid(),

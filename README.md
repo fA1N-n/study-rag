@@ -6,7 +6,9 @@
 
 Проект сдаётся по двум курсам: «Большие данные» (КАИ) и OTUS «Разработка веб-приложения с AI-агентами». ТЗ — [docs/spec.md](docs/spec.md), архитектура — [ARCHITECTURE.md](ARCHITECTURE.md), метрики — [docs/eval.md](docs/eval.md), требования — [docs/requirements.md](docs/requirements.md), журнал работы с AI — [docs/ai-log.md](docs/ai-log.md).
 
-**Прод:** ссылка появится после подключения Vercel. Вход без регистрации — кнопка «Войти как проверяющий».
+**Прод:** https://study-rag-livid.vercel.app — вход без регистрации кнопкой «Войти как проверяющий». Ответ в чате идёт 30–100 с: бесплатные модели медленные.
+
+**Text-to-UI:** экраны чата и доски, сгенерированные v0 по текстовому описанию, — ветка [`v0/chat-and-labeling-board`](https://github.com/fA1N-n/study-rag/tree/v0/chat-and-labeling-board) (в `main` не сливалась).
 
 ## Как это работает
 
