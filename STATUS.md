@@ -48,7 +48,7 @@
 - Этап 8 (`docs/plan.md`, этап 8): отчёт, презентация, демо готовы; ждёт одобрения пользователя на независимую проверку (субагент fable) и исправление найденного.
 
 ## Next
-1. Этап 8 — независимая проверка отчёта и презентации субагентом (fable) против `docs/eval.md`, STATUS, `docs/requirements.md`; исправить найденное, пересобрать (`node scripts/report/build-report.mjs`, `powershell -File scripts\report\word-update.ps1 <docx>`, `node scripts/report/build-deck.cjs`).
+1. Этап 8 — независимая проверка отчёта и презентации субагентом (fable) против `docs/eval.md`, STATUS, `docs/requirements.md`; исправить найденное, пересобрать (`node scripts/report/build-report.mjs`, `powershell -File scripts\report\word-update.ps1 <docx>`, `node scripts/report/build-deck.mjs`).
 2. Решение пользователя: тайм-аут поиска в чате основного датасета на проде (см. Tried) — гипотеза RLS на каждую строку; возможное исправление — `match_chunks` как `security definer` с одной проверкой `can_read_dataset(p_dataset)` (миграция 9, `db push` на прод).
 3. Титульник: Никулин Д.Э., Тугулева К.С. (4307), руководитель Мокшин В.В. Анализ конкурентов, настоящие вопросы, очередь проверки (99) — пользователь отказался, в отчёте как ограничения.
 4. По желанию: порог rerank 3/10.
@@ -58,7 +58,7 @@
 - Этапы 4–5 (f6d9515): миграция 6, `src/lib/worker.ts`, `src/app/api/{datasets/[id]/jobs,jobs/[id],jobs/[id]/cancel,worker/tick}`, `src/app/(app)/d/[id]/labeling`, `src/components/LabelingActions.tsx`; правки `llm.ts`, `rules.ts`, `labeler.ts`, `RulesActions.tsx`, `ReviewForm.tsx`, review и rules pages, `scripts/import-dataset.ts`, `.env.example`.
 - Этап 6 (71f49a4): миграции 7–8, `src/lib/rag/{chunk,embed,indexer,ask}.ts`, `src/app/api/{ask,questions,questions/[id],documents/[id]/units,datasets/[id]/index}`, `src/app/(app)/d/[id]/chat`, `src/components/Chat.tsx`, `src/app/(app)/history/page.tsx`, `scripts/index-dataset.ts`.
 - Этап 7 (3726adb): `scripts/labeling/silver-{prep.ts,prompt.md}`, `scripts/eval/{labeling-eval,search-eval}.ts`, `src/lib/labeling/accuracy.ts`, `smoke/smoke.test.ts`, `docs/eval.md`, `README.md`, `ARCHITECTURE.md`, `docs/screenshots/v2/`.
-- Этап 8: `scripts/report/{shots.mjs,diagrams.html,diagrams.mjs,lib.mjs,build-report.mjs,build-deck.cjs,word-update.ps1,ppt-pdf.ps1}`, `docs/report/` (docx, pdf, pptx, pdf, demo-script.md), `docs/screenshots/v2/` (пересняты на проде 1280×800, новые: datasets, docs, document, rules, upload, chat-source, chat-mobile-dark, overview-mobile-dark), `docs/screenshots/report/`; правки `docs/plan.md`, `docs/requirements.md`, `docs/ai-log.md`.
+- Этап 8: `scripts/report/{shots.mjs,diagrams.html,diagrams.mjs,lib.mjs,build-report.mjs,build-deck.mjs,word-update.ps1,ppt-pdf.ps1}`, `docs/report/` (docx, pdf, pptx, pdf, demo-script.md), `docs/screenshots/v2/` (пересняты на проде 1280×800, новые: datasets, docs, document, rules, upload, chat-source, chat-mobile-dark, overview-mobile-dark), `docs/screenshots/report/`; правки `docs/plan.md`, `docs/requirements.md`, `docs/ai-log.md`.
 - `.env.local`: изменены только строки `*_MODEL`, добавлены `FAST_MODEL`, `ASK_MODEL`.
 - Данные (вне git): `data/labeling/silver/{in,out}/`, `data/eval/{labeling.md,cache.json}`; в БД — тестовый датасет демо «Тест: 8 документов КИ» (правила v1 агента, утверждены; 2 вопроса в истории демо).
 

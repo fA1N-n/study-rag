@@ -50,7 +50,7 @@
 - [x] ТЗ `docs/spec.md` утверждено (v2.0, 2026-11-07)
 - [x] Три итерации дизайна → выбран A «Консоль»: `docs/design.md`, `docs/screenshots/design/`
 - [x] Отчёт .docx в формате КАИ — `docs/report/Проект_Никулин_Тугулева_StudyRAG.docx` (41 с., 15 таблиц, 17 рисунков; сборка `scripts/report/build-report.mjs`)
-- [x] Презентация к защите — `docs/report/Study_RAG_защита.pptx`, 10 слайдов (`scripts/report/build-deck.cjs`)
+- [x] Презентация к защите — `docs/report/Study_RAG_защита.pptx`, 10 слайдов (`scripts/report/build-deck.mjs`)
 - [x] Сценарий демо на 5 минут — `docs/report/demo-script.md`
 
 ## Делает пользователь сам (напоминать)

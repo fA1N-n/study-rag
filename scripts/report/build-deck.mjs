@@ -1,6 +1,6 @@
-// Презентация к защите: node scripts/report/build-deck.cjs → docs/report/Study_RAG_защита.pptx
+// Презентация к защите: node scripts/report/build-deck.mjs → docs/report/Study_RAG_защита.pptx
 // Цифры — из docs/eval.md и STATUS.md (как в отчёте).
-const pptxgen = require("pptxgenjs");
+import pptxgen from "pptxgenjs";
 
 const THEME = {
   name: "Study RAG",
@@ -175,8 +175,6 @@ s.addText([
 ], { isTextBox: true, x: 0.8, y: 1.8, w: 11.6, h: 4.2, margin: 0, fontSize: 20, color: C.background1, valign: "top" });
 T(s, "study-rag-livid.vercel.app · github.com/fA1N-n/study-rag", { x: 0.8, y: 6.4, w: 11, h: 0.4, fontSize: 16, color: C.accent6 });
 
-(async () => {
-  const out = "docs/report/Study_RAG_защита.pptx";
-  await pres.writeFile({ fileName: out });
-  console.log(out);
-})();
+const out = "docs/report/Study_RAG_защита.pptx";
+await pres.writeFile({ fileName: out });
+console.log(out);
