@@ -56,7 +56,7 @@ s = pres.addSlide({ masterName: "CONTENT" });
 title(s, "Материалы есть, но искать по ним нельзя");
 stat(s, 0.6, 1.5, 2.85, "572", "документа КИ за I–V семестры");
 stat(s, 3.7, 1.5, 2.85, "41 %", "без предмета", C.accent4);
-stat(s, 6.8, 1.5, 2.85, "≈248", "с чужими ФИО и группами", C.accent3);
+stat(s, 6.8, 1.5, 2.85, "≈248", "с титульными листами: чужие ФИО, группы", C.accent3);
 stat(s, 9.9, 1.5, 2.85, "5 014", "картинок без описаний", C.accent5);
 bullets(s, [
   "Тип документа ставился по умолчанию: «задание» у 244, «другое» у 131",
@@ -82,22 +82,22 @@ s.addImage({ path: S + "report/arch.png", x: 0.6, y: 1.45, w: 7.8, h: 7.8 * 928 
 bullets(s, [
   "Next.js 16 на Vercel: экраны и 18 API-маршрутов",
   "Supabase: 9 таблиц, RLS, pgvector, FTS russian",
-  "Очередь в Postgres, pg_cron раз в минуту дёргает воркер",
+  "Очередь в Postgres; pg_cron раз в минуту будит воркер, если есть работа",
   "LLM — бесплатные модели OpenRouter, запасная — Cloudflare",
-  "Затраты на сервисы и модели — 0 ₽",
+  "Сервисы и модели приложения — 0 ₽ (офлайн-разметка — по имеющейся подписке)",
 ], { x: 8.8, y: 1.5, w: 3.95, h: 4.5, fontSize: 15 });
 s.addNotes("Долгая работа не влезает в 300 с функции Vercel — поэтому очередь и короткие тики.");
 
 // 5. Разметка
 s = pres.addSlide({ masterName: "CONTENT" });
-title(s, "Двое разметчиков, арбитр и человек");
+title(s, "Двое разметчиков, арбитр и очередь человеку");
 s.addChart(pres.charts.DOUGHNUT, [{ name: "Итог", labels: ["agreed", "refereed", "review"], values: [434, 39, 99] }], {
   x: 0.5, y: 1.4, w: 4.4, h: 4.2, holeSize: 55, chartColors: [HEX.accent2, HEX.accent3, HEX.accent4], showPercent: true, showValue: false, showLegend: true, legendPos: "b", legendFontFace: "+mn-lt", legendFontSize: 12, dataLabelColor: "FFFFFF", dataLabelFontSize: 12, dataLabelFontFace: "+mn-lt", showTitle: true, title: "572 документа после разметки", titleFontFace: "+mn-lt", titleFontSize: 14, titleColor: HEX.dk1,
 });
 bullets(s, [
   "Правила v1: архитектор по 30 документам, критик по другим 20 — 16 правок",
   "A — Claude Sonnet, B — Codex и Claude Haiku, арбитр — Claude Opus",
-  "Каппа Коэна A/B по полям: 0,907–0,965",
+  "Каппа Коэна A/B по полям: 0,907–0,965 (A и Haiku — одно семейство, согласие завышено)",
   "Арбитр уверенно решил 39 из 69 споров, остальное — человеку",
 ], { x: 5.2, y: 1.5, w: 3.9, h: 4.2, fontSize: 15 });
 s.addImage({ path: S + "v2/labeling.jpg", x: 9.3, y: 1.5, w: 3.45, h: 3.45 * 800 / 1280 });
@@ -112,34 +112,35 @@ s.addChart(pres.charts.BAR, [{ name: "Все поля верно", labels: ["A (
   ...chartBase, x: 0.5, y: 1.4, w: 6.0, h: 4.3, barDir: "col", chartColors: [HEX.accent1], showLegend: false, title: "Совпадение с серебряным набором, все поля, n = 80",
 });
 s.addChart(pres.charts.BAR, [{ name: "Все поля верно", labels: ["agreed (41)", "refereed (7)", "review (32)"], values: [92.7, 100, 68.8] }], {
-  ...chartBase, x: 6.8, y: 1.4, w: 6.0, h: 4.3, barDir: "col", chartColors: [HEX.accent2, HEX.accent3, HEX.accent4], showLegend: false, title: "Точность по статусу маршрутизации",
+  ...chartBase, x: 6.8, y: 1.4, w: 6.0, h: 4.3, barDir: "col", chartColors: [HEX.accent2, HEX.accent3, HEX.accent4], showLegend: false, title: "Совпадение с серебряным набором по статусу",
 });
-note(s, "Серебряный набор — разметка Claude Opus по полному тексту, не людьми; с 19 ручными проверками он совпадает на 36,8 % по документу целиком. Интервал Уилсона для A и итога — 74–90 %.", { x: 0.6, y: 5.9, w: 12.1, h: 0.7 });
-s.addNotes("Вывод: человеку уходит 17 % корпуса, и там ошибок в 4 раза больше (31 % против 7 %).");
+note(s, "Эталон — разметка Claude Opus, не людей (с 19 ручными проверками совпадает на 36,8 %). Выборка 80 не случайная: 43 документа — с низкой уверенностью. review: 10 расхождений из 32, agreed: 3 из 41.", { x: 0.6, y: 5.9, w: 12.1, h: 0.7 });
+s.addNotes("Человеку уходит 17 % корпуса; на выборке там в ~4 раза больше расхождений с серебряным набором (31 % против 7 %). Эталон — модель.");
 
 // 7. Поиск
 s = pres.addSlide({ masterName: "CONTENT" });
-title(s, "Фильтр из разметки вывел поиск на цель 0,8");
-s.addChart(pres.charts.BAR, [{ name: "hit@5", labels: ["Гибрид без фильтров", "Гибрид + фильтр по предмету"], values: [73.6, 83.0] }], {
+title(s, "Верный фильтр из разметки: hit@5 83 % вместо 74 %");
+s.addChart(pres.charts.BAR, [{ name: "hit@5", labels: ["Гибрид без фильтров", "Гибрид + верный фильтр по предмету"], values: [73.6, 83.0] }], {
   ...chartBase, x: 0.5, y: 1.4, w: 6.2, h: 4.3, barDir: "col", chartColors: [HEX.accent5, HEX.accent1], showLegend: false, title: "hit@5, 53 вопроса",
 });
-stat(s, 7.1, 1.5, 2.7, "+9,4", "п. п. hit@5 от фильтра по предмету", C.accent2);
-stat(s, 10.05, 1.5, 2.7, "−10", "п. п. hit@5 от rerank бесплатной LLM (n = 20)", C.accent4);
+stat(s, 7.1, 1.5, 2.7, "+9,4", "п. п. hit@5 от фильтра (5 вопросов из 53)", C.accent2);
+stat(s, 10.05, 1.5, 2.7, "−10", "п. п. hit@5 от rerank (2 вопроса из 20)", C.accent4);
 bullets(s, [
   "MRR@10: 0,544 → 0,630",
-  "Отказ на вопросах без ответа: 6 из 8",
+  "Пустая выдача после rerank на вопросах без ответа: 6 из 8",
   "Ложные отказы: 2 из 20",
 ], { x: 7.1, y: 3.5, w: 5.6, h: 1.8, fontSize: 15 });
-note(s, "Вопросы сгенерированы моделью, настоящих вопросов студентов нет — метрики могут быть завышены. Rerank оставлен ради отказов; дальше — порог 3/10 или модель сильнее.", { x: 0.6, y: 5.9, w: 12.1, h: 0.7 });
+note(s, "Фильтр взят из разметки вопроса (заранее верный), запрос не переписывался; интервал для 83 % — 71–91 %. Вопросы сгенерированы моделью. Путь с rerank — 70 % на 20 вопросах.", { x: 0.6, y: 5.9, w: 12.1, h: 0.7 });
 s.addNotes("Главный эксперимент проекта: польза разметки для поиска.");
 
 // 8. Демо
 s = pres.addSlide({ masterName: "CONTENT" });
 title(s, "Демо: вопрос → ответ со сносками");
+note(s, "Чат тестового датасета (8 документов): на основном 10.11 вопрос без фильтров упал по тайм-ауту БД", { x: 0.6, y: 6.35, w: 7.7, h: 0.4 });
 s.addImage({ path: S + "v2/chat.jpg", x: 0.6, y: 1.4, w: 7.7, h: 7.7 * 800 / 1280 });
 bullets(s, [
   "Вход «Войти как проверяющий»",
-  "Обзор датасета: 572 документа, 410 с замаскированными ПДн",
+  "Обзор датасета: 572 документа, ПДн замаскированы в 410 (не только титульники)",
   "Правила v1 и доска разметки",
   "Очередь проверки: голоса A и B с цитатами",
   "Чат: переписанный запрос, сноски [n], источник со страницей",
@@ -152,7 +153,7 @@ title(s, "Как делали: ИИ-агенты и проверки");
 stat(s, 0.6, 1.5, 2.85, "227", "автотестов, из них 25 SQL/RLS");
 stat(s, 3.7, 1.5, 2.85, "16", "дефектов нашёл финальный критик загрузки", C.accent3);
 stat(s, 6.8, 1.5, 2.85, "11", "экранов, мобильная и тёмная тема", C.accent2);
-stat(s, 9.9, 1.5, 2.85, "0 ₽", "на сервисы и модели", C.accent5);
+stat(s, 9.9, 1.5, 2.85, "0 ₽", "на сервисы и модели приложения", C.accent5);
 bullets(s, [
   "Claude Code писал код; субагенты — разметчики, арбитры, критики",
   "TDD с двумя независимыми критиками для загрузки и разметки",
@@ -161,16 +162,16 @@ bullets(s, [
 card(s, 8.4, 3.7, 4.35, 2.6, "v0");
 T(s, "Text-to-UI в v0", { x: 8.65, y: 3.9, w: 3.9, h: 0.4, fontSize: 18, bold: true, color: C.accent1 });
 T(s, "Экраны чата и доски по текстовому описанию: 15 файлов, раскладка по нашему дизайну, но ответ — заглушка 501. Ветка не слита.", { x: 8.65, y: 4.35, w: 3.9, h: 1.9, fontSize: 15 });
-s.addNotes("CI: lint, типы, тесты, сборка на каждый push; автодеплой Vercel.");
+s.addNotes("CI: lint, типы, тесты, сборка на push в main и pull request; автодеплой Vercel.");
 
 // 10. Итоги
 s = pres.addSlide({ masterName: "DARK" });
 T(s, "Итоги", { x: 0.8, y: 0.6, w: 11, h: 0.9, fontSize: 40, bold: true, color: C.background1, fontFace: "Arial" });
 s.addText([
   { text: "Работает: загрузка с маскированием ПДн → правила агентов → разметка «двое + арбитр + человек» → RAG со сносками", options: { bullet: true, breakLine: true, paraSpaceAfter: 10 } },
-  { text: "Разметка окупилась в поиске: hit@5 83,0 % с фильтром против 73,6 % без", options: { bullet: true, breakLine: true, paraSpaceAfter: 10 } },
-  { text: "Человеку — 17 % корпуса, и ошибок там в 4 раза больше", options: { bullet: true, breakLine: true, paraSpaceAfter: 10 } },
-  { text: "Ограничения: серебряный набор — модель, вопросы сгенерированы, rerank ухудшил выдачу", options: { bullet: true, breakLine: true, paraSpaceAfter: 10 } },
+  { text: "Разметка помогает поиску: с верным фильтром по предмету hit@5 83,0 % против 73,6 % без", options: { bullet: true, breakLine: true, paraSpaceAfter: 10 } },
+  { text: "Человеку — 17 % корпуса; там в ~4 раза больше расхождений с серебряным набором", options: { bullet: true, breakLine: true, paraSpaceAfter: 10 } },
+  { text: "Ограничения: серебряный набор — модель, вопросы сгенерированы, фильтр в оценке задан заранее, rerank ухудшил выдачу, чат основного датасета 10.11 упал по тайм-ауту БД", options: { bullet: true, breakLine: true, paraSpaceAfter: 10 } },
   { text: "Дальше: правила v2, ручная проверка очереди, настоящие вопросы студентов", options: { bullet: true } },
 ], { isTextBox: true, x: 0.8, y: 1.8, w: 11.6, h: 4.2, margin: 0, fontSize: 20, color: C.background1, valign: "top" });
 T(s, "study-rag-livid.vercel.app · github.com/fA1N-n/study-rag", { x: 0.8, y: 6.4, w: 11, h: 0.4, fontSize: 16, color: C.accent6 });
