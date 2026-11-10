@@ -4,7 +4,7 @@
 1. data/labeling/ruleset_v1.json — поля (`fields`: значения enum, допустимые семестры `allowedBy`), правила (`rules`, markdown) и примеры (`examples`). Правила — главный источник; следуй им буквально.
 2. data/labeling/inputs/batch-{NNN}.json — документы батча: `doc_id`, `filename`, `source_path`, `units`, `preview`.
 
-Запрещено открывать что-либо ещё: data/raw_*/ (там метки сборщика — они ненадёжны и испортят независимость), docs_index.json, sample_*.json, выходы других разметчиков (data/labeling/A/, data/labeling/B/), labels_*.jsonl. Не запускай скрипты. Не ищи в интернете.
+Запрещено открывать что-либо ещё: data/raw_*/ (там метки сборщика — они ненадёжны и испортят независимость), docs_index.json, sample_*.json, выходы других разметчиков (data/labeling/A/, data/labeling/B/), labels_*.jsonl. Никаких скриптов (Python, node, shell) — ни для анализа, ни для записи; файл только инструментом Write. Исключение — `validate.ts`, если это разрешено в задании. Большие файлы читай Read сразу с `allow_large`. Не ищи в интернете.
 
 Для КАЖДОГО документа батча (ровно один объект на doc_id, тот же порядок) реши поля по разделу «Порядок решения» и запиши объект:
 {"doc_id": "<sha256 как во входе>", "values": {"subject": "...", "semester": 3, "teacher": "...", "doc_type": "...", "title": "...", "has_pii": true}, "confidence": 0.85, "rationale": "<цитата для предмета | цитата для типа>"}
