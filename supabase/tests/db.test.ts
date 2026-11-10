@@ -9,6 +9,7 @@ const MIGRATION = readFileSync(join(__dirname, "../migrations/20261107000001_ini
 const LIMITS = readFileSync(join(__dirname, "../migrations/20261108000003_profiles_limits.sql"), "utf8");
 const WORKER = readFileSync(join(__dirname, "../migrations/20261108000006_worker.sql"), "utf8");
 const INDEX = readFileSync(join(__dirname, "../migrations/20261108000007_index.sql"), "utf8");
+const SEARCH = readFileSync(join(__dirname, "../migrations/20261110000009_search_definer.sql"), "utf8");
 const OWNER = "00000000-0000-0000-0000-00000000000a";
 const OTHER = "00000000-0000-0000-0000-00000000000b";
 const DEMO = "00000000-0000-0000-0000-00000000000d";
@@ -52,6 +53,7 @@ beforeAll(async () => {
   await db.exec(LIMITS);
   await db.exec(WORKER);
   await db.exec(INDEX);
+  await db.exec(SEARCH);
   await db.exec(`
     grant usage on schema public to authenticated;
     grant select, insert, update, delete on all tables in schema public to authenticated;
@@ -314,8 +316,25 @@ describe("поиск", () => {
 
   it("D10: соседи ±1 без самих найденных", async () => {
     const id = (await db.query<{ id: number }>("select id from chunks where content like 'Семафор%'")).rows[0].id;
-    const r = await as(OWNER, (tx) => rows(tx, "select unit_no from neighbor_chunks($1) order by unit_no", [[id]]));
+    const r = await as(OWNER, (tx) => rows(tx, "select unit_no from neighbor_chunks($1, $2) order by unit_no", [dsOwner, [id]]));
     expect(r.map((x) => x.unit_no)).toEqual([1, 3]);
+  });
+
+  it("D15: security definer — чужой не получает соседей чужого датасета ни по его id, ни подставив свой датасет", async () => {
+    const id = (await db.query<{ id: number }>("select id from chunks where content like 'Семафор%'")).rows[0].id;
+    expect(await as(OTHER, (tx) => rows(tx, "select id from neighbor_chunks($1, $2)", [dsOwner, [id]]))).toEqual([]);
+    const own = (await db.query<{ id: string }>("insert into datasets (owner_id, name) values ($1, 'Свой OTHER') returning id", [OTHER])).rows[0].id;
+    expect(await as(OTHER, (tx) => rows(tx, "select id from neighbor_chunks($1, $2)", [own, [id]]))).toEqual([]);
+    expect(await as(OTHER, (tx) => rows(tx, "select id from match_chunks($1, null, 'семафор', '{}', 10)", [own]))).toEqual([]);
+  });
+
+  it("D15: анониму функции поиска недоступны", async () => {
+    await expect(
+      db.transaction(async (tx) => {
+        await tx.exec("set local role anon");
+        await tx.query("select id from match_chunks($1, null, 'семафор', '{}', 10)", [dsDemo]);
+      }),
+    ).rejects.toThrow(/permission denied/);
   });
 });
 

@@ -72,7 +72,7 @@ export async function POST(req: Request) {
         } else {
           sources = top.map((h, i) => toSource(h, i + 1));
           send("sources", { sources, nearest: false });
-          const { data: near } = await sb.rpc("neighbor_chunks", { p_ids: top.map((h) => h.id) });
+          const { data: near } = await sb.rpc("neighbor_chunks", { p_dataset: input.dataset_id, p_ids: top.map((h) => h.id) });
           const onToken = (t: string) => {
             answer += t;
             send("token", { t });
